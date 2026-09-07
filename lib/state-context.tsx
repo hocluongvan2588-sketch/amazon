@@ -39,6 +39,7 @@ import {
   mockTasks,
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
+import { SupabaseDatabaseService } from './supabase-service'
 
 export type ActiveNavTab =
   | 'ai-operations'
@@ -232,6 +233,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       ipAddress: '113.161.72.10',
     }
     setAuditLogs((prev) => [newLog, ...prev])
+    SupabaseDatabaseService.createAuditLog(newLog)
   }
 
   // 1. APPROVE RECOMMENDATION
@@ -272,6 +274,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       rec.agentType
     )
 
+    SupabaseDatabaseService.updateRecommendation(id, 'APPROVED', currentRole, notes)
+
     showToast(`Đã phê duyệt đề xuất: ${rec.title.slice(0, 50)}...`, 'success')
   }
 
@@ -304,6 +308,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       reason,
       rec.agentType
     )
+
+    SupabaseDatabaseService.updateRecommendation(id, 'REJECTED', currentRole, reason)
 
     showToast(`Đã bác bỏ đề xuất từ ${rec.agentType} Agent.`, 'info')
   }
@@ -417,6 +423,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString(),
     }
     setTasks((prev) => [newTask, ...prev])
+    SupabaseDatabaseService.createTask(newTask)
     showToast(`Đã tạo Task #${newTask.taskNumber}: ${newTask.title}`, 'success')
   }
 
