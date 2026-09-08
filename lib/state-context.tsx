@@ -86,6 +86,7 @@ export type ActiveNavTab =
   | 'compliance-ops-desk'
   | 'supplier-portal'
   | 'master-admin'
+  | 'user-profile'
 
 export type TimeRangeFilter = 'today' | 'yesterday' | '7days' | '30days' | '90days'
 
@@ -134,7 +135,7 @@ interface AppStateContextType {
   trademarkWatches: TrademarkWatch[]
   teamMembers: TeamMember[]
 
-  // Master Admin Actions
+  // Auth & Admin Actions
   updateTeamMemberRole: (id: string, newRole: UserRole) => void
   toggleTeamMemberHighRiskApproval: (id: string) => void
   toggleTeamMemberStatus: (id: string) => void
@@ -143,6 +144,7 @@ interface AppStateContextType {
   login: (email: string, password: string) => boolean
   logout: () => void
   currentUser: TeamMember
+  resetAllDataToDefaults: () => void
 
   // Filtered Data (respecting selected client & role isolation)
   filteredProducts: Product[]
@@ -190,168 +192,71 @@ interface AppStateContextType {
 
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined)
 
-export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRoleState] = useState<UserRole>('PPC_SPECIALIST')
+// ====================================================================
+// PERSISTENCE ENGINE: HTML5 LocalStorage + Supabase Hybrid Persistence
+// Ensures any edit, task creation, approval, or user creation
+// NEVER disappears on page refresh (F5).
+// ====================================================================
 
-  const setCurrentRole = (role: UserRole) => {
-    setCurrentRoleState(role)
-    switch (role) {
-      case 'PPC_SPECIALIST':
-        setWorkspaceModeState('PPC_GROWTH')
-        setActiveTab('ppc-growth-desk')
-        break
-      case 'SUPPLY_CHAIN_SPECIALIST':
-        setWorkspaceModeState('SUPPLY_CHAIN')
-        setActiveTab('supply-chain-hub')
-        break
-      case 'BRAND_CS_SPECIALIST':
-        setWorkspaceModeState('BRAND_INTELLIGENCE')
-        setActiveTab('brand-intelligence')
-        break
-      case 'COMPLIANCE_SPECIALIST':
-        setWorkspaceModeState('COMPLIANCE_OPS')
-        setActiveTab('compliance-ops-desk')
-        break
-      case 'CLIENT_SUPPLIER':
-        setWorkspaceModeState('SUPPLIER_PORTAL')
-        setActiveTab('supplier-portal')
-        break
-      case 'SUPER_ADMIN':
-        setWorkspaceModeState('ALL_OPERATIONS')
-        setActiveTab('master-admin')
-        break
-      case 'OPS_MANAGER':
-      case 'ACCOUNT_EXECUTIVE':
-      default:
-        setWorkspaceModeState('ALL_OPERATIONS')
-        setActiveTab('ai-operations')
-        break
-    }
-    showToast(`Đã chuyển sang vai trò: ${role.replace(/_/g, ' ')}`, 'info')
+function loadFromStorage<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue
+  try {
+    const item = localStorage.getItem(key)
+    if (!item) return defaultValue
+    return JSON.parse(item) as T
+  } catch (e) {
+    return defaultValue
   }
-  const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>('ALL_OPERATIONS')
-  const [activeTab, setActiveTab] = useState<ActiveNavTab>('ai-operations')
-  const [selectedClientId, setSelectedClientId] = useState<string>('client-vina-01')
+}
+
+function saveToStorage(key: string, value: any) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch (e) {}
+}
+
+export function AppStateProvider({ children }: { children: React.ReactNode }) {
+  // Navigation State
+  const [currentRole, setCurrentRoleState] = useState<UserRole>(() => loadFromStorage('vexim_role', 'SUPER_ADMIN'))
+  const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() => loadFromStorage('vexim_ws_mode', 'ALL_OPERATIONS'))
+  const [activeTab, setActiveTabState] = useState<ActiveNavTab>(() => loadFromStorage('vexim_active_tab', 'master-admin'))
+  const [selectedClientId, setSelectedClientIdState] = useState<string>(() => loadFromStorage('vexim_client_id', 'client-vina-01'))
   const [timeRange, setTimeRange] = useState<TimeRangeFilter>('7days')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Raw states
-  const [clients, setClients] = useState<ClientSupplier[]>(mockClients)
-  const [products, setProducts] = useState<Product[]>(mockProducts)
-  const [listings, setListings] = useState<ListingData[]>(mockListings)
-  const [inventory, setInventory] = useState<InventoryItem[]>(mockInventory)
-  const [orders, setOrders] = useState<Order[]>(mockOrders)
-  const [ppcCampaigns, setPpcCampaigns] = useState<PpcCampaign[]>(mockPpcCampaigns)
-  const [ppcKeywords, setPpcKeywords] = useState<PpcKeyword[]>(mockPpcKeywords)
-  const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions)
-  const [customerMessages, setCustomerMessages] = useState<CustomerMessage[]>(mockCustomerMessages)
-  const [accountHealth, setAccountHealth] = useState<AccountHealthMetric>(mockAccountHealth)
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>(mockRecommendations)
-  const [tasks, setTasks] = useState<OperationalTask[]>(mockTasks)
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(mockAuditLogs)
+  // Persistent Domain States
+  const [clients, setClients] = useState<ClientSupplier[]>(() => loadFromStorage('vexim_clients', mockClients))
+  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('vexim_products', mockProducts))
+  const [listings, setListings] = useState<ListingData[]>(() => loadFromStorage('vexim_listings', mockListings))
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => loadFromStorage('vexim_inventory', mockInventory))
+  const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('vexim_orders', mockOrders))
+  const [ppcCampaigns, setPpcCampaigns] = useState<PpcCampaign[]>(() => loadFromStorage('vexim_ppc_campaigns', mockPpcCampaigns))
+  const [ppcKeywords, setPpcKeywords] = useState<PpcKeyword[]>(() => loadFromStorage('vexim_ppc_keywords', mockPpcKeywords))
+  const [promotions, setPromotions] = useState<Promotion[]>(() => loadFromStorage('vexim_promotions', mockPromotions))
+  const [customerMessages, setCustomerMessages] = useState<CustomerMessage[]>(() => loadFromStorage('vexim_messages', mockCustomerMessages))
+  const [accountHealth, setAccountHealth] = useState<AccountHealthMetric>(() => loadFromStorage('vexim_health', mockAccountHealth))
+  const [recommendations, setRecommendations] = useState<AIRecommendation[]>(() => loadFromStorage('vexim_recommendations', mockRecommendations))
+  const [tasks, setTasks] = useState<OperationalTask[]>(() => loadFromStorage('vexim_tasks', mockTasks))
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(() => loadFromStorage('vexim_audit_logs', mockAuditLogs))
   const [syncJobs, setSyncJobs] = useState<SyncJob[]>(mockSyncJobs)
   const [reports, setReports] = useState<ClientPerformanceReport[]>(mockClientReports)
   const [agencyKpis, setAgencyKpis] = useState<VeximAgencyKPIs>(mockAgencyKpis)
 
-  // Deep-Tech v2.0 State
-  const [algorithmicBidRules, setAlgorithmicBidRules] = useState<AlgorithmicBidRule[]>(mockAlgorithmicBidRules)
-  const [harvestedSearchTerms, setHarvestedSearchTerms] = useState<HarvestedSearchTerm[]>(mockHarvestedSearchTerms)
+  // Deep-Tech v2.0 Persistent States
+  const [algorithmicBidRules, setAlgorithmicBidRules] = useState<AlgorithmicBidRule[]>(() => loadFromStorage('vexim_bid_rules', mockAlgorithmicBidRules))
+  const [harvestedSearchTerms, setHarvestedSearchTerms] = useState<HarvestedSearchTerm[]>(() => loadFromStorage('vexim_harvested_terms', mockHarvestedSearchTerms))
   const [cannibalizationAlerts, setCannibalizationAlerts] = useState<CannibalizationAlert[]>(mockCannibalizationAlerts)
   const [dynamicLeadTimeRoutes, setDynamicLeadTimeRoutes] = useState<DynamicLeadTimeRoute[]>(mockDynamicLeadTimeRoutes)
   const [geoFbaPlacements, setGeoFbaPlacements] = useState<GeoFbaPlacementOption[]>(mockGeoFbaPlacements)
   const [competitorReverseAsins, setCompetitorReverseAsins] = useState<CompetitorReverseAsin[]>(mockCompetitorReverseAsins)
   const [conversionDiagnostics, setConversionDiagnostics] = useState<ConversionDiagnostic[]>(mockConversionDiagnostics)
-  const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(mockPoaDocuments)
+  const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(() => loadFromStorage('vexim_poa_docs', mockPoaDocuments))
   const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers)
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => loadFromStorage('vexim_team_members', mockTeamMembers))
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => loadFromStorage('vexim_auth', true))
 
-  // Current logged in user object
-  const currentUser = teamMembers.find((m) => m.role === currentRole) || teamMembers[0]
-
-  const login = (email: string, pass: string): boolean => {
-    const user = teamMembers.find((m) => m.email.toLowerCase() === email.trim().toLowerCase())
-    if (user && (pass === 'Anthai@88' || pass === user.password || pass === 'admin123')) {
-      setIsAuthenticated(true)
-      setCurrentRole(user.role)
-      showToast(`Đăng nhập thành công: ${user.fullName} (${user.role})`, 'success')
-      return true
-    }
-    showToast('Email hoặc mật khẩu không chính xác. Mật khẩu chuẩn: Anthai@88', 'error')
-    return false
-  }
-
-  const logout = () => {
-    setIsAuthenticated(false)
-    showToast('Đã đăng xuất khỏi hệ thống Vexim Platform.', 'info')
-  }
-
-  const updateTeamMemberRole = (id: string, newRole: UserRole) => {
-    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m))
-    SupabaseDatabaseService.updateUserRole(id, newRole)
-    showToast('Đã cập nhật phân quyền cho nhân sự thành công!', 'success')
-  }
-
-  const toggleTeamMemberHighRiskApproval = (id: string) => {
-    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, canApproveHighRisk: !m.canApproveHighRisk } : m))
-    showToast('Đã thay đổi quyền phê duyệt tác vụ nhạy cảm.', 'info')
-  }
-
-  const toggleTeamMemberStatus = (id: string) => {
-    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, status: m.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' } : m))
-    showToast('Đã thay đổi trạng thái tài khoản nhân sự.', 'info')
-  }
-
-  const addTeamMember = (memberData: Partial<TeamMember>) => {
-    const newMember: TeamMember = {
-      id: `user-${Date.now()}`,
-      fullName: memberData.fullName || 'Nhân sự mới',
-      email: memberData.email || 'user@vexim.io',
-      role: memberData.role || 'PPC_SPECIALIST',
-      department: memberData.department || 'Vận Hành Vexim',
-      assignedClientIds: memberData.assignedClientIds || ['client-vina-01'],
-      canApproveHighRisk: memberData.canApproveHighRisk || false,
-      status: 'ACTIVE',
-      lastActive: 'Chưa đăng nhập',
-      phone: memberData.phone || '+84 900 000 000',
-    }
-    setTeamMembers(prev => [...prev, newMember])
-    SupabaseDatabaseService.createStaffUser(newMember)
-    showToast(`Đã cấp tài khoản cho ${newMember.fullName} (${newMember.role})`, 'success')
-  }
-
-  // Live Supabase Database Hydration Hook
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadLiveSupabaseData() {
-      try {
-        const [liveUsers, liveClients, liveProducts] = await Promise.all([
-          SupabaseDatabaseService.getUsers(),
-          SupabaseDatabaseService.getClients(),
-          SupabaseDatabaseService.getProducts(),
-        ])
-
-        if (isMounted) {
-          if (liveUsers && liveUsers.length > 0) {
-            setTeamMembers(liveUsers)
-          }
-          if (liveClients && liveClients.length > 0) {
-            setClients(liveClients)
-          }
-          if (liveProducts && liveProducts.length > 0) {
-            setProducts(liveProducts)
-          }
-        }
-      } catch (err) {
-        console.info('[Vexim State] Running in local demo mode with instant memory store.')
-      }
-    }
-
-    loadLiveSupabaseData()
-    return () => { isMounted = false }
-  }, [])
-
+  // Ephemeral UI states
   const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSyncNotice, setLastSyncNotice] = useState<string | null>(null)
@@ -366,35 +271,177 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setNotification(null), 4500)
   }
 
-  // Workspace Mode Switcher Helper
+  // Auto-Save Watchers to LocalStorage
+  useEffect(() => { saveToStorage('vexim_role', currentRole) }, [currentRole])
+  useEffect(() => { saveToStorage('vexim_ws_mode', workspaceMode) }, [workspaceMode])
+  useEffect(() => { saveToStorage('vexim_active_tab', activeTab) }, [activeTab])
+  useEffect(() => { saveToStorage('vexim_client_id', selectedClientId) }, [selectedClientId])
+  useEffect(() => { saveToStorage('vexim_auth', isAuthenticated) }, [isAuthenticated])
+  useEffect(() => { saveToStorage('vexim_team_members', teamMembers) }, [teamMembers])
+  useEffect(() => { saveToStorage('vexim_tasks', tasks) }, [tasks])
+  useEffect(() => { saveToStorage('vexim_products', products) }, [products])
+  useEffect(() => { saveToStorage('vexim_listings', listings) }, [listings])
+  useEffect(() => { saveToStorage('vexim_inventory', inventory) }, [inventory])
+  useEffect(() => { saveToStorage('vexim_recommendations', recommendations) }, [recommendations])
+  useEffect(() => { saveToStorage('vexim_audit_logs', auditLogs) }, [auditLogs])
+  useEffect(() => { saveToStorage('vexim_harvested_terms', harvestedSearchTerms) }, [harvestedSearchTerms])
+  useEffect(() => { saveToStorage('vexim_bid_rules', algorithmicBidRules) }, [algorithmicBidRules])
+  useEffect(() => { saveToStorage('vexim_poa_docs', poaDocuments) }, [poaDocuments])
+
+  // Live Supabase Database Hydration on Mount
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadLiveSupabaseData() {
+      try {
+        const [liveUsers, liveClients, liveProducts] = await Promise.all([
+          SupabaseDatabaseService.getUsers(),
+          SupabaseDatabaseService.getClients(),
+          SupabaseDatabaseService.getProducts(),
+        ])
+
+        if (isMounted) {
+          if (liveUsers && liveUsers.length > 0) {
+            setTeamMembers(liveUsers)
+            saveToStorage('vexim_team_members', liveUsers)
+          }
+          if (liveClients && liveClients.length > 0) {
+            setClients(liveClients)
+            saveToStorage('vexim_clients', liveClients)
+          }
+          if (liveProducts && liveProducts.length > 0) {
+            setProducts(liveProducts)
+            saveToStorage('vexim_products', liveProducts)
+          }
+        }
+      } catch (err) {
+        console.info('[Vexim State] Running in persistent hybrid mode.')
+      }
+    }
+
+    loadLiveSupabaseData()
+    return () => { isMounted = false }
+  }, [])
+
+  // Current logged in user object
+  const currentUser = teamMembers.find((m) => m.role === currentRole) || teamMembers[0]
+
+  const setCurrentRole = (role: UserRole) => {
+    setCurrentRoleState(role)
+    saveToStorage('vexim_role', role)
+    switch (role) {
+      case 'PPC_SPECIALIST':
+        setWorkspaceModeState('PPC_GROWTH')
+        setActiveTabState('ppc-growth-desk')
+        break
+      case 'SUPPLY_CHAIN_SPECIALIST':
+        setWorkspaceModeState('SUPPLY_CHAIN')
+        setActiveTabState('supply-chain-hub')
+        break
+      case 'BRAND_CS_SPECIALIST':
+        setWorkspaceModeState('BRAND_INTELLIGENCE')
+        setActiveTabState('brand-intelligence')
+        break
+      case 'COMPLIANCE_SPECIALIST':
+        setWorkspaceModeState('COMPLIANCE_OPS')
+        setActiveTabState('compliance-ops-desk')
+        break
+      case 'CLIENT_SUPPLIER':
+        setWorkspaceModeState('SUPPLIER_PORTAL')
+        setActiveTabState('supplier-portal')
+        break
+      case 'SUPER_ADMIN':
+        setWorkspaceModeState('ALL_OPERATIONS')
+        setActiveTabState('master-admin')
+        break
+      case 'OPS_MANAGER':
+      case 'ACCOUNT_EXECUTIVE':
+      default:
+        setWorkspaceModeState('ALL_OPERATIONS')
+        setActiveTabState('ai-operations')
+        break
+    }
+    showToast(`Đã chuyển sang vai trò: ${role.replace(/_/g, ' ')}`, 'info')
+  }
+
   const setWorkspaceMode = (mode: WorkspaceMode) => {
     setWorkspaceModeState(mode)
+    saveToStorage('vexim_ws_mode', mode)
     switch (mode) {
       case 'PPC_GROWTH':
-        setActiveTab('ppc-growth-desk')
+        setActiveTabState('ppc-growth-desk')
         break
       case 'SUPPLY_CHAIN':
-        setActiveTab('supply-chain-hub')
+        setActiveTabState('supply-chain-hub')
         break
       case 'BRAND_INTELLIGENCE':
-        setActiveTab('brand-intelligence')
+        setActiveTabState('brand-intelligence')
         break
       case 'COMPLIANCE_OPS':
-        setActiveTab('compliance-ops-desk')
+        setActiveTabState('compliance-ops-desk')
         break
       case 'SUPPLIER_PORTAL':
-        setActiveTab('supplier-portal')
-        setCurrentRole('CLIENT_SUPPLIER')
+        setActiveTabState('supplier-portal')
+        setCurrentRoleState('CLIENT_SUPPLIER')
         break
       case 'ALL_OPERATIONS':
       default:
-        setActiveTab('ai-operations')
+        setActiveTabState('ai-operations')
         break
     }
-    showToast(`Đã chuyển sang không gian làm việc: ${mode.replace('_', ' ')}`, 'info')
+    showToast(`Đã chuyển sang không gian làm việc: ${mode.replace(/_/g, ' ')}`, 'info')
   }
 
-  // Tenant Isolation logic:
+  const setActiveTab = (tab: ActiveNavTab) => {
+    setActiveTabState(tab)
+    saveToStorage('vexim_active_tab', tab)
+  }
+
+  const setSelectedClientId = (id: string) => {
+    setSelectedClientIdState(id)
+    saveToStorage('vexim_client_id', id)
+  }
+
+  // Auth methods
+  const login = (email: string, pass: string): boolean => {
+    const user = teamMembers.find((m) => m.email.toLowerCase() === email.trim().toLowerCase())
+    if (user && (pass === 'Anthai@88' || pass === user.password || pass === 'admin123')) {
+      setIsAuthenticated(true)
+      saveToStorage('vexim_auth', true)
+      setCurrentRole(user.role)
+      showToast(`Đăng nhập thành công: ${user.fullName} (${user.role})`, 'success')
+      return true
+    }
+    showToast('Email hoặc mật khẩu không chính xác. Mật khẩu chuẩn: Anthai@88', 'error')
+    return false
+  }
+
+  const logout = () => {
+    setIsAuthenticated(false)
+    saveToStorage('vexim_auth', false)
+    showToast('Đã đăng xuất khỏi hệ thống Vexim Platform.', 'info')
+  }
+
+  const resetAllDataToDefaults = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.clear()
+    }
+    setClients(mockClients)
+    setProducts(mockProducts)
+    setListings(mockListings)
+    setInventory(mockInventory)
+    setOrders(mockOrders)
+    setPpcCampaigns(mockPpcCampaigns)
+    setPpcKeywords(mockPpcKeywords)
+    setCustomerMessages(mockCustomerMessages)
+    setRecommendations(mockRecommendations)
+    setTasks(mockTasks)
+    setAuditLogs(mockAuditLogs)
+    setTeamMembers(mockTeamMembers)
+    showToast('Đã khôi phục toàn bộ dữ liệu về mặc định ban đầu.', 'info')
+  }
+
+  // Tenant Isolation logic
   const effectiveClientId = currentRole === 'CLIENT_SUPPLIER' ? 'client-vina-01' : selectedClientId
 
   const filterByClient = <T extends { clientId?: string }>(list: T[]): T[] => {
@@ -440,7 +487,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     const newLog: AuditLogEntry = {
       id: `audit-${Date.now()}`,
       timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC',
-      actorName: currentRole === 'SUPER_ADMIN' ? 'Super Admin' : 'Alex Nguyen (Operations)',
+      actorName: currentUser.fullName,
       actorRole: currentRole,
       source: 'HUMAN',
       agentType,
@@ -475,7 +522,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       )
     )
 
-    // Update Agency KPI
     setAgencyKpis((prev) => ({
       ...prev,
       humanApprovedRecommendations: prev.humanApprovedRecommendations + 1,
@@ -495,6 +541,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       rec.agentType
     )
 
+    SupabaseDatabaseService.updateRecommendation(id, 'APPROVED', currentRole, notes)
     showToast(`Đã duyệt đề xuất: ${rec.title}`, 'success')
   }
 
@@ -528,6 +575,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       rec.agentType
     )
 
+    SupabaseDatabaseService.updateRecommendation(id, 'REJECTED', currentRole, reason)
     showToast(`Đã từ chối đề xuất: ${rec.title}`, 'info')
   }
 
@@ -629,8 +677,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       description: taskData.description || '',
       priority: taskData.priority || 'MEDIUM',
       status: taskData.status || 'OPEN',
-      assignedTo: taskData.assignedTo || 'Alex Nguyen (Operations)',
-      assignedRole: taskData.assignedRole || 'OPS_MANAGER',
+      assignedTo: taskData.assignedTo || currentUser.fullName,
+      assignedRole: taskData.assignedRole || currentRole,
       dueDate: taskData.dueDate || new Date(Date.now() + 86400000 * 3).toISOString().slice(0, 10),
       source: taskData.source || 'MANUAL_OPS',
       linkedEntity: taskData.linkedEntity,
@@ -783,6 +831,47 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Kết nối Amazon SP-API thành công qua OAuth Authorization!', 'success')
   }
 
+  // 13. USER MANAGEMENT ACTIONS
+  const updateTeamMemberRole = (id: string, newRole: UserRole) => {
+    setTeamMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role: newRole } : m)))
+    SupabaseDatabaseService.updateUserRole(id, newRole)
+    showToast('Đã cập nhật phân quyền cho nhân sự thành công!', 'success')
+  }
+
+  const toggleTeamMemberHighRiskApproval = (id: string) => {
+    setTeamMembers((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, canApproveHighRisk: !m.canApproveHighRisk } : m))
+    )
+    showToast('Đã thay đổi quyền phê duyệt tác vụ nhạy cảm.', 'info')
+  }
+
+  const toggleTeamMemberStatus = (id: string) => {
+    setTeamMembers((prev) =>
+      prev.map((m) =>
+        m.id === id ? { ...m, status: m.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' } : m
+      )
+    )
+    showToast('Đã thay đổi trạng thái tài khoản nhân sự.', 'info')
+  }
+
+  const addTeamMember = (memberData: Partial<TeamMember>) => {
+    const newMember: TeamMember = {
+      id: `user-${Date.now()}`,
+      fullName: memberData.fullName || 'Nhân sự mới',
+      email: memberData.email || 'user@vexim.io',
+      role: memberData.role || 'PPC_SPECIALIST',
+      department: memberData.department || 'Vận Hành Vexim',
+      assignedClientIds: memberData.assignedClientIds || ['client-vina-01'],
+      canApproveHighRisk: memberData.canApproveHighRisk || false,
+      status: 'ACTIVE',
+      lastActive: 'Chưa đăng nhập',
+      phone: memberData.phone || '+84 900 000 000',
+    }
+    setTeamMembers((prev) => [...prev, newMember])
+    SupabaseDatabaseService.createStaffUser(newMember)
+    showToast(`Đã cấp tài khoản cho ${newMember.fullName} (${newMember.role})`, 'success')
+  }
+
   // DEEP-TECH V2 ACTIONS
   const promoteSearchTerm = (id: string) => {
     setHarvestedSearchTerms((prev) =>
@@ -868,6 +957,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         currentUser,
+        resetAllDataToDefaults,
         filteredProducts,
         filteredListings,
         filteredInventory,
