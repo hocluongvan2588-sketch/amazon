@@ -1,11 +1,14 @@
 // VEXIM AMAZON OPERATIONS PLATFORM - TYPES DEFINITIONS V1.0
 
 export type UserRole =
-  | 'SUPER_ADMIN' // Vexim Super Admin
+  | 'SUPER_ADMIN' // Vexim Super Admin / Giám đốc Vận hành
   | 'OPS_MANAGER' // Amazon Operations Manager
-  | 'ACCOUNT_EXECUTIVE' // Account Executive
-  | 'COMPLIANCE_SPECIALIST' // Compliance Team
-  | 'CLIENT_SUPPLIER' // Vietnamese Supplier / Client
+  | 'PPC_SPECIALIST' // Chuyên viên Quảng cáo & Growth PPC
+  | 'SUPPLY_CHAIN_SPECIALIST' // Chuyên viên Kho vận & Chuỗi cung ứng FBA
+  | 'BRAND_CS_SPECIALIST' // Chuyên viên Listing, CRO & Chăm sóc Khách hàng
+  | 'COMPLIANCE_SPECIALIST' // Chuyên viên Pháp lý, FDA & POA Kháng cáo
+  | 'ACCOUNT_EXECUTIVE' // Account Executive quản lý Client
+  | 'CLIENT_SUPPLIER' // Chủ Doanh nghiệp / Nhà xưởng Việt Nam
 
 export type ServiceTier =
   | 'AMAZON_AUDIT' // $100-300 one-time

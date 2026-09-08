@@ -177,7 +177,41 @@ interface AppStateContextType {
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined)
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
-  const [currentRole, setCurrentRole] = useState<UserRole>('OPS_MANAGER')
+  const [currentRole, setCurrentRoleState] = useState<UserRole>('PPC_SPECIALIST')
+
+  const setCurrentRole = (role: UserRole) => {
+    setCurrentRoleState(role)
+    switch (role) {
+      case 'PPC_SPECIALIST':
+        setWorkspaceModeState('PPC_GROWTH')
+        setActiveTab('ppc-growth-desk')
+        break
+      case 'SUPPLY_CHAIN_SPECIALIST':
+        setWorkspaceModeState('SUPPLY_CHAIN')
+        setActiveTab('supply-chain-hub')
+        break
+      case 'BRAND_CS_SPECIALIST':
+        setWorkspaceModeState('BRAND_INTELLIGENCE')
+        setActiveTab('brand-intelligence')
+        break
+      case 'COMPLIANCE_SPECIALIST':
+        setWorkspaceModeState('COMPLIANCE_OPS')
+        setActiveTab('compliance-ops-desk')
+        break
+      case 'CLIENT_SUPPLIER':
+        setWorkspaceModeState('SUPPLIER_PORTAL')
+        setActiveTab('supplier-portal')
+        break
+      case 'SUPER_ADMIN':
+      case 'OPS_MANAGER':
+      case 'ACCOUNT_EXECUTIVE':
+      default:
+        setWorkspaceModeState('ALL_OPERATIONS')
+        setActiveTab('ai-operations')
+        break
+    }
+    showToast(`Đã chuyển sang vai trò: ${role.replace(/_/g, ' ')}`, 'info')
+  }
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>('ALL_OPERATIONS')
   const [activeTab, setActiveTab] = useState<ActiveNavTab>('ai-operations')
   const [selectedClientId, setSelectedClientId] = useState<string>('client-vina-01')
