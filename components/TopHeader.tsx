@@ -10,10 +10,14 @@ import {
   ChevronDown,
   Clock,
   Compass,
+  Crown,
   Cpu,
   Gavel,
+  KeyRound,
   Layers,
   LayoutGrid,
+  Lock,
+  LogOut,
   MapPin,
   Megaphone,
   MessageSquareWarning,
@@ -24,8 +28,9 @@ import {
   Ship,
   Sparkles,
   Target,
-  UserCheck,
   User,
+  UserCheck,
+  UserCog,
   Zap,
 } from 'lucide-react'
 
@@ -44,26 +49,31 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
     isSyncing,
     runAiFullScan,
     recommendations,
+    setActiveTab,
+    logout,
+    currentUser,
+    teamMembers,
   } = useAppState()
 
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
   const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
 
   const pendingApprovalsCount = recommendations.filter((r) => r.status === 'PENDING_APPROVAL').length
 
   const roleConfigs: Record<UserRole, { label: string; department: string; tag: string; badgeColor: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
+    SUPER_ADMIN: { label: 'Vexim Super Admin / Master', department: 'Ban Lãnh Đạo', tag: 'Toàn quyền 15 phân hệ & Quản trị', badgeColor: 'bg-slate-900 text-white border-slate-700', icon: Crown },
+    OPS_MANAGER: { label: 'Operations Director', department: 'Quản Lý Vận Hành', tag: 'Điều phối toàn bộ dự án', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200', icon: LayoutGrid },
     PPC_SPECIALIST: { label: 'PPC & Growth Specialist', department: 'Team Quảng Cáo', tag: 'Tập trung Ads, Bid, Keyword Harvester', badgeColor: 'bg-indigo-100 text-indigo-800 border-indigo-200', icon: Zap },
     SUPPLY_CHAIN_SPECIALIST: { label: 'Logistics & Supply Chain', department: 'Team Kho Vận FBA', tag: 'Tập trung Lead Time, Inbound Split & Tồn kho', badgeColor: 'bg-cyan-100 text-cyan-800 border-cyan-200', icon: Ship },
     BRAND_CS_SPECIALIST: { label: 'Brand & Customer Experience', department: 'Team Nội Dung & CS', tag: 'Tập trung Listing SEO, CRO & Trả lời khách', badgeColor: 'bg-purple-100 text-purple-800 border-purple-200', icon: Target },
     COMPLIANCE_SPECIALIST: { label: 'Compliance & Legal Counsel', department: 'Team Pháp Lý & FDA', tag: 'Tập trung Soạn POA, Sức khỏe TK, USPTO', badgeColor: 'bg-rose-100 text-rose-800 border-rose-200', icon: Gavel },
-    SUPER_ADMIN: { label: 'Vexim Super Admin / Ops Lead', department: 'Ban Lãnh Đạo', tag: 'Toàn quyền 15 phân hệ & Duyệt rủi ro cao', badgeColor: 'bg-slate-900 text-white border-slate-700', icon: LayoutGrid },
-    OPS_MANAGER: { label: 'Operations Manager', department: 'Quản Lý Vận Hành', tag: 'Điều phối toàn bộ dự án', badgeColor: 'bg-blue-100 text-blue-800 border-blue-200', icon: LayoutGrid },
     ACCOUNT_EXECUTIVE: { label: 'Account Executive', department: 'Chăm Sóc Client', tag: 'Giao tiếp nhà xưởng', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200', icon: UserCheck },
     CLIENT_SUPPLIER: { label: 'Chủ Xưởng Việt Nam (Client)', department: 'Doanh Nghiệp VN', tag: 'Chỉ xem P&L, Dòng tiền & Báo cáo minh bạch', badgeColor: 'bg-sky-100 text-sky-800 border-sky-200', icon: ShieldCheck },
   }
 
   const activeClient = clients.find((c) => c.id === selectedClientId)
-  const currentRoleConfig = roleConfigs[currentRole] || roleConfigs.PPC_SPECIALIST
+  const currentRoleConfig = roleConfigs[currentRole] || roleConfigs.SUPER_ADMIN
   const RoleIcon = currentRoleConfig.icon
 
   return (
@@ -73,7 +83,11 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
         {/* Role Switcher (Department Selector) */}
         <div className="relative">
           <button
-            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+            onClick={() => {
+              setRoleDropdownOpen(!roleDropdownOpen)
+              setProfileDropdownOpen(false)
+              setClientDropdownOpen(false)
+            }}
             className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all shadow-xs ${currentRoleConfig.badgeColor}`}
             title="Nhấn để chuyển đổi vai trò bộ phận làm việc"
           >
@@ -126,7 +140,11 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
         {currentRole !== 'CLIENT_SUPPLIER' && (
           <div className="relative hidden md:block">
             <button
-              onClick={() => setClientDropdownOpen(!clientDropdownOpen)}
+              onClick={() => {
+                setClientDropdownOpen(!clientDropdownOpen)
+                setRoleDropdownOpen(false)
+                setProfileDropdownOpen(false)
+              }}
               className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-slate-800 hover:bg-slate-100 transition-colors"
             >
               <div className="flex h-4 w-4 items-center justify-center rounded bg-blue-600 text-[9px] font-bold text-white">
@@ -186,11 +204,11 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
           </span>
-          <span>SP-API: <strong className="font-semibold text-emerald-900">US Connected</strong></span>
+          <span>SP-API: <strong className="font-semibold text-emerald-900">US Live</strong></span>
         </div>
       </div>
 
-      {/* Right: Search, AI Scanner, AI Chatbot */}
+      {/* Right: Search, AI Scanner, AI Chatbot & User Profile with Logout */}
       <div className="flex items-center gap-2.5">
         {/* Search bar */}
         <div className="relative hidden xl:block w-44">
@@ -228,16 +246,106 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
           <span className="hidden sm:inline">Hỏi Vexim AI</span>
         </button>
 
-        {/* User Profile Avatar & Account Direct Link */}
-        <button
-          onClick={() => {
-            setActiveTab('user-profile')
-          }}
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-900 to-indigo-700 text-xs font-black text-white shadow-xs hover:ring-2 hover:ring-indigo-400 transition-all"
-          title="Tài khoản cá nhân & Đổi mật khẩu (hocluongvan88@gmail.com)"
-        >
-          {currentRole.slice(0, 2)}
-        </button>
+        {/* User Account Avatar & Interactive Profile Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setProfileDropdownOpen(!profileDropdownOpen)
+              setRoleDropdownOpen(false)
+              setClientDropdownOpen(false)
+            }}
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1 pr-2 hover:bg-slate-100 transition-all shadow-xs"
+            title="Tài khoản cá nhân & Đăng xuất"
+          >
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-slate-900 via-indigo-900 to-indigo-700 text-xs font-black text-white shadow-xs">
+              {currentUser.fullName.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="hidden md:block text-left">
+              <div className="text-[11px] font-bold text-slate-900 leading-tight truncate max-w-[110px]">
+                {currentUser.fullName.split(' ')[0]}
+              </div>
+              <div className="text-[9px] font-mono text-slate-400 leading-none truncate max-w-[110px]">
+                {currentUser.email.split('@')[0]}
+              </div>
+            </div>
+            <ChevronDown size={12} className="text-slate-400" />
+          </button>
+
+          {profileDropdownOpen && (
+            <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-2 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100">
+              {/* User Header in Dropdown */}
+              <div className="p-3 bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-xl mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
+                    {currentUser.fullName.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-bold truncate flex items-center gap-1">
+                      <span>{currentUser.fullName}</span>
+                      {currentUser.role === 'SUPER_ADMIN' && <Crown size={12} className="text-amber-400" />}
+                    </div>
+                    <div className="text-[10px] font-mono text-indigo-200 truncate">{currentUser.email}</div>
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-slate-300">
+                  <span>Vai trò: <strong className="text-white">{currentUser.role}</strong></span>
+                  <span className="rounded bg-emerald-500/30 px-1.5 py-0.2 text-emerald-300 font-mono">Online</span>
+                </div>
+              </div>
+
+              {/* Action Menu Items */}
+              <div className="space-y-0.5 text-xs">
+                <button
+                  onClick={() => {
+                    setActiveTab('user-profile')
+                    setProfileDropdownOpen(false)
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 hover:bg-indigo-50 hover:text-indigo-900 transition-colors"
+                >
+                  <User size={15} className="text-indigo-600" />
+                  <span className="font-semibold">Thông Tin Cá Nhân & Mật Khẩu</span>
+                </button>
+
+                {currentRole === 'SUPER_ADMIN' && (
+                  <button
+                    onClick={() => {
+                      setActiveTab('master-admin')
+                      setProfileDropdownOpen(false)
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 hover:bg-purple-50 hover:text-purple-900 transition-colors"
+                  >
+                    <Crown size={15} className="text-amber-500" />
+                    <span className="font-semibold">Bảng Quản Trị Super Admin</span>
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setActiveTab('user-profile')
+                    setProfileDropdownOpen(false)
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <UserCog size={15} className="text-slate-500" />
+                  <span>9 Tài Khoản Phân Quyền (Switch)</span>
+                </button>
+              </div>
+
+              {/* Logout Button */}
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                onClick={() => {
+                  setProfileDropdownOpen(false)
+                  logout()
+                }}
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-red-600 hover:bg-red-50 transition-colors text-xs font-bold cursor-pointer"
+              >
+                <LogOut size={15} className="text-red-600" />
+                <span>Đăng Xuất (Logout)</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )

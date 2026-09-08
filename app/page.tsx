@@ -33,6 +33,7 @@ import { ComplianceLegalDesk } from '@/components/views/ComplianceLegalDesk'
 import { SupplierExecutivePortal } from '@/components/views/SupplierExecutivePortal'
 import { MasterAdminControlCenter } from '@/components/views/MasterAdminControlCenter'
 import { UserProfileAccount } from '@/components/views/UserProfileAccount'
+import { LoginScreen } from '@/components/views/LoginScreen'
 
 // Modals
 import { ApprovalModal } from '@/components/modals/ApprovalModal'
@@ -41,9 +42,14 @@ import { TaskCreateModal } from '@/components/modals/TaskCreateModal'
 import { AlertCircle, CheckCircle2, Info, Menu, X } from 'lucide-react'
 
 function MainAppShell() {
-  const { activeTab, notification, setNotification } = useAppState()
+  const { activeTab, notification, setNotification, isAuthenticated } = useAppState()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chatDrawerOpen, setChatDrawerOpen] = useState(false)
+
+  // If user is logged out, show official login screen
+  if (!isAuthenticated) {
+    return <LoginScreen />
+  }
 
   const renderActiveView = () => {
     switch (activeTab) {

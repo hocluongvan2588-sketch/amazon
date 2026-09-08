@@ -139,6 +139,10 @@ interface AppStateContextType {
   toggleTeamMemberHighRiskApproval: (id: string) => void
   toggleTeamMemberStatus: (id: string) => void
   addTeamMember: (member: Partial<TeamMember>) => void
+  isAuthenticated: boolean
+  login: (email: string, password: string) => boolean
+  logout: () => void
+  currentUser: TeamMember
 
   // Filtered Data (respecting selected client & role isolation)
   filteredProducts: Product[]
@@ -260,6 +264,27 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(mockPoaDocuments)
   const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true)
+
+  // Current logged in user object
+  const currentUser = teamMembers.find((m) => m.role === currentRole) || teamMembers[0]
+
+  const login = (email: string, pass: string): boolean => {
+    const user = teamMembers.find((m) => m.email.toLowerCase() === email.trim().toLowerCase())
+    if (user && (pass === 'Anthai@88' || pass === user.password || pass === 'admin123')) {
+      setIsAuthenticated(true)
+      setCurrentRole(user.role)
+      showToast(`Đăng nhập thành công: ${user.fullName} (${user.role})`, 'success')
+      return true
+    }
+    showToast('Email hoặc mật khẩu không chính xác. Mật khẩu chuẩn: Anthai@88', 'error')
+    return false
+  }
+
+  const logout = () => {
+    setIsAuthenticated(false)
+    showToast('Đã đăng xuất khỏi hệ thống Vexim Platform.', 'info')
+  }
 
   const updateTeamMemberRole = (id: string, newRole: UserRole) => {
     setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m))
@@ -805,6 +830,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         toggleTeamMemberHighRiskApproval,
         toggleTeamMemberStatus,
         addTeamMember,
+        isAuthenticated,
+        login,
+        logout,
+        currentUser,
         filteredProducts,
         filteredListings,
         filteredInventory,

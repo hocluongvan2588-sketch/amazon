@@ -5,7 +5,6 @@ import { useAppState, ActiveNavTab } from '@/lib/state-context'
 import { UserRole } from '@/lib/types'
 import {
   Activity,
-  Crown,
   AlertOctagon,
   BarChart3,
   Bot,
@@ -14,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Cpu,
+  Crown,
   FileSpreadsheet,
   FileText,
   Flame,
@@ -23,6 +23,7 @@ import {
   History,
   Layers,
   LayoutDashboard,
+  LogOut,
   Megaphone,
   MessageSquareWarning,
   Package,
@@ -35,6 +36,7 @@ import {
   Sparkles,
   Target,
   TrendingUp,
+  User,
   Workflow,
   X,
   Zap,
@@ -58,12 +60,13 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     activeTab,
     setActiveTab,
     currentRole,
+    currentUser,
+    logout,
     recommendations,
     tasks,
     customerMessages,
     accountHealth,
     harvestedSearchTerms,
-    poaDocuments,
   } = useAppState()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -82,35 +85,12 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'KHÔNG GIAN PPC & GROWTH',
             items: [
-              {
-                id: 'ppc-growth-desk',
-                label: 'PPC & Growth Desk',
-                icon: Zap,
-                badge: pendingHarvest > 0 ? `${pendingHarvest} từ khóa` : undefined,
-                badgeVariant: 'purple',
-              },
-              {
-                id: 'ppc',
-                label: 'Chiến Dịch Quảng Cáo',
-                icon: Megaphone,
-              },
-              {
-                id: 'promotions',
-                label: 'Khuyến Mãi & Deals',
-                icon: Flame,
-              },
-              {
-                id: 'sales-analyst',
-                label: 'AI Sales & ROAS Analyst',
-                icon: TrendingUp,
-              },
-              {
-                id: 'tasks',
-                label: 'Nhiệm Vụ PPC Hôm Nay',
-                icon: CheckSquare,
-                badge: openTasksCount > 0 ? openTasksCount : undefined,
-                badgeVariant: 'blue',
-              },
+              { id: 'ppc-growth-desk', label: 'PPC & Growth Desk', icon: Zap, badge: pendingHarvest > 0 ? `${pendingHarvest} từ khóa` : undefined, badgeVariant: 'purple' },
+              { id: 'ppc', label: 'Chiến Dịch Quảng Cáo', icon: Megaphone },
+              { id: 'promotions', label: 'Khuyến Mãi & Deals', icon: Flame },
+              { id: 'sales-analyst', label: 'AI Sales & ROAS Analyst', icon: TrendingUp },
+              { id: 'tasks', label: 'Nhiệm Vụ PPC Hôm Nay', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
         ]
@@ -120,37 +100,12 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'KHÔNG GIAN KHO VẬN & FBA',
             items: [
-              {
-                id: 'supply-chain-hub',
-                label: 'Supply Chain & Geo-FBA',
-                icon: Ship,
-                badge: 'JIT Restock',
-                badgeVariant: 'blue',
-              },
-              {
-                id: 'inventory',
-                label: 'Tồn Kho FBA & 3PL',
-                icon: Boxes,
-                badge: 'Cần nhập',
-                badgeVariant: 'amber',
-              },
-              {
-                id: 'orders',
-                label: 'Đơn Hàng & Giao Vận',
-                icon: PackageCheck,
-              },
-              {
-                id: 'sync-center',
-                label: 'SP-API Đồng Bộ Kho',
-                icon: RefreshCw,
-              },
-              {
-                id: 'tasks',
-                label: 'Nhiệm Vụ Kho & Vận Chuyển',
-                icon: CheckSquare,
-                badge: openTasksCount > 0 ? openTasksCount : undefined,
-                badgeVariant: 'blue',
-              },
+              { id: 'supply-chain-hub', label: 'Supply Chain & Geo-FBA', icon: Ship, badge: 'JIT Restock', badgeVariant: 'blue' },
+              { id: 'inventory', label: 'Tồn Kho FBA & 3PL', icon: Boxes, badge: 'Cần nhập', badgeVariant: 'amber' },
+              { id: 'orders', label: 'Đơn Hàng & Giao Vận', icon: PackageCheck },
+              { id: 'sync-center', label: 'SP-API Đồng Bộ Kho', icon: RefreshCw },
+              { id: 'tasks', label: 'Nhiệm Vụ Kho & Vận Chuyển', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
         ]
@@ -160,37 +115,12 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'KHÔNG GIAN BRAND, LISTING & CS',
             items: [
-              {
-                id: 'brand-intelligence',
-                label: 'Brand Intel & CRO Desk',
-                icon: Target,
-                badge: '2 CVR Gap',
-                badgeVariant: 'purple',
-              },
-              {
-                id: 'listings',
-                label: 'Tối Ưu Listing & SEO',
-                icon: Package,
-              },
-              {
-                id: 'products',
-                label: 'Sản Phẩm & Tiếp Nhận',
-                icon: Rocket,
-              },
-              {
-                id: 'customers',
-                label: 'Chăm Sóc Khách Hàng (Inbox)',
-                icon: MessageSquareWarning,
-                badge: criticalSafetyMessages > 0 ? 'Khẩn' : undefined,
-                badgeVariant: 'red',
-              },
-              {
-                id: 'tasks',
-                label: 'Nhiệm Vụ Content & CS',
-                icon: CheckSquare,
-                badge: openTasksCount > 0 ? openTasksCount : undefined,
-                badgeVariant: 'blue',
-              },
+              { id: 'brand-intelligence', label: 'Brand Intel & CRO Desk', icon: Target, badge: '2 CVR Gap', badgeVariant: 'purple' },
+              { id: 'listings', label: 'Tối Ưu Listing & SEO', icon: Package },
+              { id: 'products', label: 'Sản Phẩm & Tiếp Nhận', icon: Rocket },
+              { id: 'customers', label: 'Chăm Sóc Khách Hàng (Inbox)', icon: MessageSquareWarning, badge: criticalSafetyMessages > 0 ? 'Khẩn' : undefined, badgeVariant: 'red' },
+              { id: 'tasks', label: 'Nhiệm Vụ Content & CS', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
         ]
@@ -200,37 +130,12 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'KHÔNG GIAN PHÁP LÝ & AN TOÀN',
             items: [
-              {
-                id: 'compliance-ops-desk',
-                label: 'Legal & Soạn Đơn POA',
-                icon: Gavel,
-                badge: 'POA Ready',
-                badgeVariant: 'red',
-              },
-              {
-                id: 'account-health',
-                label: 'Sức Khỏe Tài Khoản',
-                icon: HeartPulse,
-                badge: openHealthIssues > 0 ? openHealthIssues : undefined,
-                badgeVariant: 'amber',
-              },
-              {
-                id: 'products',
-                label: 'Kiểm Duyệt FDA / COA',
-                icon: Rocket,
-              },
-              {
-                id: 'audit-log',
-                label: 'Nhật Ký Kiểm Toán (Audit)',
-                icon: History,
-              },
-              {
-                id: 'tasks',
-                label: 'Nhiệm Vụ Pháp Lý',
-                icon: CheckSquare,
-                badge: openTasksCount > 0 ? openTasksCount : undefined,
-                badgeVariant: 'blue',
-              },
+              { id: 'compliance-ops-desk', label: 'Legal & Soạn Đơn POA', icon: Gavel, badge: 'POA Ready', badgeVariant: 'red' },
+              { id: 'account-health', label: 'Sức Khỏe Tài Khoản', icon: HeartPulse, badge: openHealthIssues > 0 ? openHealthIssues : undefined, badgeVariant: 'amber' },
+              { id: 'products', label: 'Kiểm Duyệt FDA / COA', icon: Rocket },
+              { id: 'audit-log', label: 'Nhật Ký Kiểm Toán (Audit)', icon: History },
+              { id: 'tasks', label: 'Nhiệm Vụ Pháp Lý', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
         ]
@@ -240,23 +145,10 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'CỔNG DOANH NGHIỆP VIỆT NAM',
             items: [
-              {
-                id: 'supplier-portal',
-                label: 'Cổng Doanh Nghiệp (P&L)',
-                icon: ShieldCheck,
-                badge: 'VNĐ / USD',
-                badgeVariant: 'green',
-              },
-              {
-                id: 'reports',
-                label: 'Báo Cáo Doanh Thu & Lãi',
-                icon: FileText,
-              },
-              {
-                id: 'inventory',
-                label: 'Tồn Kho Sản Phẩm',
-                icon: Boxes,
-              },
+              { id: 'supplier-portal', label: 'Cổng Doanh Nghiệp (P&L)', icon: ShieldCheck, badge: 'VNĐ / USD', badgeVariant: 'green' },
+              { id: 'reports', label: 'Báo Cáo Doanh Thu & Lãi', icon: FileText },
+              { id: 'inventory', label: 'Tồn Kho Sản Phẩm', icon: Boxes },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
         ]
@@ -265,12 +157,12 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       case 'OPS_MANAGER':
       case 'ACCOUNT_EXECUTIVE':
       default:
-        // Super Admin & Ops Lead see full system cleanly categorized
         return [
           {
             title: 'QUẢN TRỊ CẤP CAO (MASTER CONTROL)',
             items: [
               { id: 'master-admin', label: 'Quản Trị, Cấp Quyền & P&L', icon: Crown, badge: 'Master', badgeVariant: 'purple' },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
               { id: 'ai-efficiency', label: 'Tối Ưu Chi Phí AI ($1.42)', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
               { id: 'vexim-kpis', label: 'Hiệu Suất Vexim Agency', icon: Activity },
             ],
@@ -307,10 +199,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               { id: 'tasks', label: 'Task Vận hành', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
               { id: 'reports', label: 'Báo cáo Hiệu suất', icon: FileText },
               { id: 'sync-center', label: 'SP-API Connector', icon: RefreshCw },
-              { id: 'vexim-kpis', label: 'Hiệu suất Vexim', icon: Activity },
-              { id: 'ai-efficiency', label: 'Tối ưu Chi phí AI', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
               { id: 'audit-log', label: 'Nhật ký Kiểm toán', icon: History },
-              { id: 'user-profile', label: 'Tài Khoản & Mật Khẩu', icon: User },
             ],
           },
         ]
@@ -318,27 +207,6 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   }
 
   const navSections = getRoleSpecificNavSections(currentRole)
-
-  const getRoleHeaderInfo = () => {
-    switch (currentRole) {
-      case 'PPC_SPECIALIST':
-        return { title: 'PPC Specialist', desc: 'Chuyên gia Quảng Cáo & Growth', color: 'bg-indigo-500 text-indigo-100 border-indigo-600' }
-      case 'SUPPLY_CHAIN_SPECIALIST':
-        return { title: 'Logistics Hub', desc: 'Chuyên gia Kho Vận & FBA', color: 'bg-cyan-600 text-cyan-100 border-cyan-700' }
-      case 'BRAND_CS_SPECIALIST':
-        return { title: 'Brand & CS Desk', desc: 'Listing & Chăm sóc Khách hàng', color: 'bg-purple-600 text-purple-100 border-purple-700' }
-      case 'COMPLIANCE_SPECIALIST':
-        return { title: 'Legal & Compliance', desc: 'Pháp Lý, FDA & POA', color: 'bg-rose-600 text-rose-100 border-rose-700' }
-      case 'CLIENT_SUPPLIER':
-        return { title: 'Supplier Portal', desc: 'Chủ Xưởng Việt Nam', color: 'bg-sky-600 text-sky-100 border-sky-700' }
-      case 'SUPER_ADMIN':
-      case 'OPS_MANAGER':
-      default:
-        return { title: 'Super Admin Mode', desc: 'Toàn quyền 15 Phân hệ', color: 'bg-slate-900 text-slate-100 border-slate-800' }
-    }
-  }
-
-  const roleInfo = getRoleHeaderInfo()
 
   const getBadgeStyle = (variant?: 'red' | 'amber' | 'blue' | 'green' | 'purple') => {
     switch (variant) {
@@ -382,7 +250,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-black tracking-wider text-slate-900">VEXIM</span>
                   <span className="rounded bg-indigo-100 px-1.5 py-0.2 text-[9px] font-mono font-bold text-indigo-800">
-                    Role Active
+                    US V2
                   </span>
                 </div>
                 <div className="text-[10px] font-mono tracking-wider text-slate-400 truncate">
@@ -412,19 +280,18 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           </div>
         </div>
 
-        {/* Current Active Role Highlight Card */}
+        {/* Marketplace Pill */}
         {!isCollapsed ? (
-          <div className="mx-3 my-2.5 rounded-xl border border-slate-200 bg-slate-50/90 p-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] uppercase font-mono font-bold text-slate-400">Bộ phận đang làm việc:</span>
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="mx-3 my-2.5 flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs">
+            <div className="flex items-center gap-2 text-slate-700 font-medium truncate">
+              <Globe2 size={14} className="text-blue-600 shrink-0" />
+              <span className="truncate">Amazon US (SP-API Live)</span>
             </div>
-            <div className="mt-1 font-bold text-xs text-slate-900">{roleInfo.title}</div>
-            <div className="text-[10px] text-slate-500 truncate">{roleInfo.desc}</div>
+            <span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-500" title="Connected to SP-API" />
           </div>
         ) : (
-          <div className="mx-auto my-2 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs" title={roleInfo.title}>
-            {currentRole.slice(0, 2)}
+          <div className="mx-auto my-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-blue-600">
+            <Globe2 size={16} />
           </div>
         )}
 
@@ -485,19 +352,58 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           ))}
         </div>
 
-        {/* Footer Security Badge */}
-        <div className="border-t border-slate-200 p-3">
+        {/* Footer User Account & Logout Card */}
+        <div className="border-t border-slate-200 p-3 bg-slate-50/50">
           {!isCollapsed ? (
-            <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-600">
-              <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-              <div className="min-w-0 flex-1 truncate">
-                <div className="font-semibold text-slate-800 truncate">Role Isolation Active</div>
-                <div className="text-[10px] text-slate-400 truncate">Giao diện tập trung 100%</div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2.5 p-1.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-tr from-slate-900 to-indigo-800 text-xs font-bold text-white">
+                  {currentUser.fullName.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1 truncate">
+                  <div className="font-bold text-xs text-slate-900 truncate flex items-center gap-1">
+                    <span>{currentUser.fullName}</span>
+                    {currentUser.role === 'SUPER_ADMIN' && <Crown size={11} className="text-amber-500 shrink-0" />}
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-400 truncate">{currentUser.email}</div>
+                </div>
+              </div>
+
+              {/* 2 Action Buttons side by side */}
+              <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                <button
+                  onClick={() => setActiveTab('user-profile')}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 transition-colors"
+                >
+                  <User size={13} />
+                  <span>Hồ Sơ & MK</span>
+                </button>
+                <button
+                  onClick={() => logout()}
+                  className="flex items-center justify-center gap-1 rounded-lg border border-red-200 bg-red-50/80 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                  title="Đăng xuất khỏi tài khoản"
+                >
+                  <LogOut size={13} />
+                  <span>Đăng Xuất</span>
+                </button>
               </div>
             </div>
           ) : (
-            <div className="flex justify-center p-1 text-emerald-600" title="Role Isolation Active">
-              <ShieldCheck size={18} />
+            <div className="flex flex-col items-center gap-2">
+              <button
+                onClick={() => setActiveTab('user-profile')}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                title="Thông tin cá nhân"
+              >
+                <User size={16} />
+              </button>
+              <button
+                onClick={() => logout()}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600 hover:bg-red-100 cursor-pointer"
+                title="Đăng xuất"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           )}
         </div>
