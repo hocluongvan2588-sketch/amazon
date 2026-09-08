@@ -42,3 +42,21 @@ INSERT INTO ai_recommendations (client_id, agent_type, entity_type, entity_id, e
 VALUES
   ('11111111-1111-1111-1111-111111111111', 'INVENTORY', 'INVENTORY', 'inv-01', 'VXM-COCOA-70DK (B0DC89X102)', 'Cảnh báo hết hàng FBA trong 11.8 ngày — Cần phê duyệt PO bổ sung 1,200 units', 'Tồn kho FBA hiện chỉ còn 168 units trong khi lead time biển từ Việt Nam cần 32 ngày.', 'Nếu không tạo PO ngay hôm nay, sản phẩm sẽ đứt hàng vào ngày 19/09 làm tụt hạng BSR.', 96, 'CRITICAL', 'HIGH', 'Tạo PO 1,200 units (900 sea + 300 air express cứu nguy).', 'Ngăn ngừa thất thoát ~$8,850 doanh thu và bảo vệ Organic Ranking BSR.', 'PENDING_APPROVAL'),
   ('11111111-1111-1111-1111-111111111111', 'PPC', 'KEYWORD', 'kw-02', 'SP_DarkChoc_Broad (cheap dark candy bar)', 'Giảm 35% bid từ khóa lãng phí ngân sách (ACOS 88.03% vs Target 28%)', 'Từ khóa broad tiêu $88 trong 7 ngày chỉ mang lại $99 doanh thu.', 'Khách tìm cheap kẹo $1-2 không phù hợp với phân khúc socola $24.99.', 94, 'HIGH', 'LOW', 'Giảm bid từ $0.85 xuống $0.55 và thêm negative keyword.', 'Tiết kiệm ~$180/tháng ngân sách quảng cáo không hiệu quả.', 'PENDING_APPROVAL');
+
+-- ====================================================================
+-- 7. INSERT 9 OFFICIAL VEXIM & SUPPLIER TEAM ACCOUNTS
+-- Password for all accounts: Anthai@88
+-- ====================================================================
+
+INSERT INTO users (id, email, full_name, role, organization_id, status)
+VALUES
+  ('u1111111-1111-1111-1111-111111111111', 'hocluongvan88@gmail.com', 'Lương Văn Học (Master Super Admin)', 'SUPER_ADMIN', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u2222222-2222-2222-2222-222222222222', 'hocluongvan25@gmail.com', 'Lương Văn Học (Operations Director)', 'OPS_MANAGER', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u3333333-3333-3333-3333-333333333333', 'luonghoangminh88@gmail.com', 'Lương Hoàng Minh (PPC Lead)', 'PPC_SPECIALIST', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u4444444-4444-4444-4444-444444444444', 'anhnguyen94@gmail.com', 'Ánh Nguyễn (Logistics Hub)', 'SUPPLY_CHAIN_SPECIALIST', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u5555555-5555-5555-5555-555555555555', 'hocluongvan26@gmail.com', 'Lương Văn Học (Brand & CS Lead)', 'BRAND_CS_SPECIALIST', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u6666666-6666-6666-6666-666666666666', 'hocluongvan2588@gmail.com', 'Lương Văn Học (Legal & FDA Counsel)', 'COMPLIANCE_SPECIALIST', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u7777777-7777-7777-7777-777777777777', 'hocluongvan2788@gmail.com', 'Lương Văn Học (Senior AE)', 'ACCOUNT_EXECUTIVE', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u8888888-8888-8888-8888-888888888888', 'hocluongvan22@gmail.com', 'Lương Văn Học (CEO Vinacacao USA Direct)', 'CLIENT_SUPPLIER', '00000000-0000-0000-0000-000000000001', 'ACTIVE'),
+  ('u9999999-9999-9999-9999-999999999999', 'hocluongvvan33@gmail.com', 'Lương Văn Học (Founder Thảo Mộc An An)', 'CLIENT_SUPPLIER', '00000000-0000-0000-0000-000000000001', 'ACTIVE')
+ON CONFLICT (email) DO NOTHING;

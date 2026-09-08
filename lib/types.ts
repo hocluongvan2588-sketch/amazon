@@ -636,6 +636,7 @@ export interface TeamMember {
   id: string
   fullName: string
   email: string
+  password?: string
   role: UserRole
   department: string
   assignedClientIds: string[] // 'ALL' or array of clientIds
@@ -644,4 +645,7 @@ export interface TeamMember {
   lastActive: string
   avatarUrl?: string
   phone?: string
+  title?: string
+  twoFactorEnabled?: boolean
+  createdAt?: string
 }

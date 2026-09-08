@@ -32,6 +32,7 @@ import { BrandIntelligenceView } from '@/components/views/BrandIntelligenceView'
 import { ComplianceLegalDesk } from '@/components/views/ComplianceLegalDesk'
 import { SupplierExecutivePortal } from '@/components/views/SupplierExecutivePortal'
 import { MasterAdminControlCenter } from '@/components/views/MasterAdminControlCenter'
+import { UserProfileAccount } from '@/components/views/UserProfileAccount'
 
 // Modals
 import { ApprovalModal } from '@/components/modals/ApprovalModal'
@@ -59,6 +60,8 @@ function MainAppShell() {
         return <SupplierExecutivePortal />
       case 'master-admin':
         return <MasterAdminControlCenter />
+      case 'user-profile':
+        return <UserProfileAccount />
 
       // Core Views
       case 'ai-operations':

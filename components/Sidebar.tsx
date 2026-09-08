@@ -310,6 +310,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
               { id: 'vexim-kpis', label: 'Hiệu suất Vexim', icon: Activity },
               { id: 'ai-efficiency', label: 'Tối ưu Chi phí AI', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
               { id: 'audit-log', label: 'Nhật ký Kiểm toán', icon: History },
+              { id: 'user-profile', label: 'Tài Khoản & Mật Khẩu', icon: User },
             ],
           },
         ]

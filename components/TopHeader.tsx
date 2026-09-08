@@ -25,6 +25,7 @@ import {
   Sparkles,
   Target,
   UserCheck,
+  User,
   Zap,
 } from 'lucide-react'
 
@@ -225,6 +226,17 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
         >
           <Bot size={14} />
           <span className="hidden sm:inline">Hỏi Vexim AI</span>
+        </button>
+
+        {/* User Profile Avatar & Account Direct Link */}
+        <button
+          onClick={() => {
+            setActiveTab('user-profile')
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-900 to-indigo-700 text-xs font-black text-white shadow-xs hover:ring-2 hover:ring-indigo-400 transition-all"
+          title="Tài khoản cá nhân & Đổi mật khẩu (hocluongvan88@gmail.com)"
+        >
+          {currentRole.slice(0, 2)}
         </button>
       </div>
     </header>
