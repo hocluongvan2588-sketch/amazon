@@ -22,6 +22,7 @@ import { SalesAnalystView } from '@/components/views/SalesAnalystView'
 import { ClientReporting } from '@/components/views/ClientReporting'
 import { SyncEngineView } from '@/components/views/SyncEngineView'
 import { VeximBusinessKpi } from '@/components/views/VeximBusinessKpi'
+import { AIEfficiencyMonitor } from '@/components/views/AIEfficiencyMonitor'
 import { AuditLogView } from '@/components/views/AuditLogView'
 
 // Modals
@@ -67,6 +68,8 @@ function MainAppShell() {
         return <SyncEngineView />
       case 'vexim-kpis':
         return <VeximBusinessKpi />
+      case 'ai-efficiency':
+        return <AIEfficiencyMonitor />
       case 'audit-log':
         return <AuditLogView />
       default:

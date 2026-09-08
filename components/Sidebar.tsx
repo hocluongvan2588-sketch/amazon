@@ -11,6 +11,7 @@ import {
   CheckSquare,
   ChevronLeft,
   ChevronRight,
+  Cpu,
   FileSpreadsheet,
   FileText,
   Flame,
@@ -151,6 +152,14 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           label: 'Hiệu suất Vexim',
           icon: Activity,
           rolesAllowed: ['SUPER_ADMIN', 'OPS_MANAGER', 'ACCOUNT_EXECUTIVE'],
+        },
+        {
+          id: 'ai-efficiency',
+          label: 'Tối ưu Chi phí AI',
+          icon: Cpu,
+          badge: '$1.42',
+          badgeVariant: 'green',
+          rolesAllowed: ['SUPER_ADMIN', 'OPS_MANAGER'],
         },
         {
           id: 'audit-log',

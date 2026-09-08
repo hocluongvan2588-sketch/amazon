@@ -57,6 +57,7 @@ export type ActiveNavTab =
   | 'reports'
   | 'sync-center'
   | 'vexim-kpis'
+  | 'ai-efficiency'
   | 'audit-log'
 
 export type TimeRangeFilter = 'today' | 'yesterday' | '7days' | '30days' | '90days'
