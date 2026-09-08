@@ -630,3 +630,18 @@ export interface TrademarkWatch {
   riskAssessmentVi: string
   recommendedLegalAction: string
 }
+
+// Master Admin & Team RBAC Management Types
+export interface TeamMember {
+  id: string
+  fullName: string
+  email: string
+  role: UserRole
+  department: string
+  assignedClientIds: string[] // 'ALL' or array of clientIds
+  canApproveHighRisk: boolean // Permission to approve price changes > 15% and budgets > $500
+  status: 'ACTIVE' | 'SUSPENDED'
+  lastActive: string
+  avatarUrl?: string
+  phone?: string
+}

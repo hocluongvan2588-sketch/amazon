@@ -5,6 +5,7 @@ import { useAppState, ActiveNavTab } from '@/lib/state-context'
 import { UserRole } from '@/lib/types'
 import {
   Activity,
+  Crown,
   AlertOctagon,
   BarChart3,
   Bot,
@@ -267,7 +268,15 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         // Super Admin & Ops Lead see full system cleanly categorized
         return [
           {
-            title: 'KHÔNG GIAN CHUYÊN SÂU (DEEP-TECH)',
+            title: 'QUẢN TRỊ CẤP CAO (MASTER CONTROL)',
+            items: [
+              { id: 'master-admin', label: 'Quản Trị, Cấp Quyền & P&L', icon: Crown, badge: 'Master', badgeVariant: 'purple' },
+              { id: 'ai-efficiency', label: 'Tối Ưu Chi Phí AI ($1.42)', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
+              { id: 'vexim-kpis', label: 'Hiệu Suất Vexim Agency', icon: Activity },
+            ],
+          },
+          {
+            title: 'CÁC DESK CHUYÊN SÂU (DEEP-TECH)',
             items: [
               { id: 'ppc-growth-desk', label: 'PPC & Growth Desk', icon: Zap, badge: pendingHarvest > 0 ? pendingHarvest : undefined, badgeVariant: 'purple' },
               { id: 'supply-chain-hub', label: 'Supply Chain & Geo-FBA', icon: Ship, badge: 'JIT', badgeVariant: 'blue' },

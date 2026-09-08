@@ -29,6 +29,7 @@ import {
   ConversionDiagnostic,
   PoaDocument,
   TrademarkWatch,
+  TeamMember,
 } from './types'
 import {
   mockAccountHealth,
@@ -56,6 +57,7 @@ import {
   mockConversionDiagnostics,
   mockPoaDocuments,
   mockTrademarkWatches,
+  mockTeamMembers,
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
@@ -83,6 +85,7 @@ export type ActiveNavTab =
   | 'brand-intelligence'
   | 'compliance-ops-desk'
   | 'supplier-portal'
+  | 'master-admin'
 
 export type TimeRangeFilter = 'today' | 'yesterday' | '7days' | '30days' | '90days'
 
@@ -129,6 +132,13 @@ interface AppStateContextType {
   conversionDiagnostics: ConversionDiagnostic[]
   poaDocuments: PoaDocument[]
   trademarkWatches: TrademarkWatch[]
+  teamMembers: TeamMember[]
+
+  // Master Admin Actions
+  updateTeamMemberRole: (id: string, newRole: UserRole) => void
+  toggleTeamMemberHighRiskApproval: (id: string) => void
+  toggleTeamMemberStatus: (id: string) => void
+  addTeamMember: (member: Partial<TeamMember>) => void
 
   // Filtered Data (respecting selected client & role isolation)
   filteredProducts: Product[]
@@ -203,6 +213,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         setActiveTab('supplier-portal')
         break
       case 'SUPER_ADMIN':
+        setWorkspaceModeState('ALL_OPERATIONS')
+        setActiveTab('master-admin')
+        break
       case 'OPS_MANAGER':
       case 'ACCOUNT_EXECUTIVE':
       default:
@@ -246,6 +259,39 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [conversionDiagnostics, setConversionDiagnostics] = useState<ConversionDiagnostic[]>(mockConversionDiagnostics)
   const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(mockPoaDocuments)
   const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(mockTeamMembers)
+
+  const updateTeamMemberRole = (id: string, newRole: UserRole) => {
+    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m))
+    showToast('Đã cập nhật phân quyền cho nhân sự thành công!', 'success')
+  }
+
+  const toggleTeamMemberHighRiskApproval = (id: string) => {
+    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, canApproveHighRisk: !m.canApproveHighRisk } : m))
+    showToast('Đã thay đổi quyền phê duyệt tác vụ nhạy cảm.', 'info')
+  }
+
+  const toggleTeamMemberStatus = (id: string) => {
+    setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, status: m.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' } : m))
+    showToast('Đã thay đổi trạng thái tài khoản nhân sự.', 'info')
+  }
+
+  const addTeamMember = (memberData: Partial<TeamMember>) => {
+    const newMember: TeamMember = {
+      id: `user-${Date.now()}`,
+      fullName: memberData.fullName || 'Nhân sự mới',
+      email: memberData.email || 'user@vexim.io',
+      role: memberData.role || 'PPC_SPECIALIST',
+      department: memberData.department || 'Vận Hành Vexim',
+      assignedClientIds: memberData.assignedClientIds || ['client-vina-01'],
+      canApproveHighRisk: memberData.canApproveHighRisk || false,
+      status: 'ACTIVE',
+      lastActive: 'Chưa đăng nhập',
+      phone: memberData.phone || '+84 900 000 000',
+    }
+    setTeamMembers(prev => [...prev, newMember])
+    showToast(`Đã cấp tài khoản cho ${newMember.fullName} (${newMember.role})`, 'success')
+  }
 
   const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -754,6 +800,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         conversionDiagnostics,
         poaDocuments,
         trademarkWatches,
+        teamMembers,
+        updateTeamMemberRole,
+        toggleTeamMemberHighRiskApproval,
+        toggleTeamMemberStatus,
+        addTeamMember,
         filteredProducts,
         filteredListings,
         filteredInventory,
