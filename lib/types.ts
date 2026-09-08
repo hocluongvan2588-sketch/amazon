@@ -468,3 +468,162 @@ export interface VeximAgencyKPIs {
     amazonGrowth: number
   }
 }
+
+// ==========================================
+// VEXIM PLATFORM V2.0 - DEEP TECH DATA TYPES
+// ==========================================
+
+export type WorkspaceMode =
+  | 'ALL_OPERATIONS'
+  | 'PPC_GROWTH'
+  | 'SUPPLY_CHAIN'
+  | 'BRAND_INTELLIGENCE'
+  | 'COMPLIANCE_OPS'
+  | 'SUPPLIER_PORTAL'
+
+// 1. PPC & Growth Desk Types
+export interface AlgorithmicBidRule {
+  id: string
+  ruleName: string
+  ruleType: 'DAY_PARTING' | 'TARGET_ACOS_TUNER' | 'INVENTORY_THROTTLE' | 'PLACEMENT_BOOST'
+  targetCampaignIds: string[]
+  parameters: {
+    peakHoursBidMultiplier?: number // e.g. 1.25 (+25%)
+    offPeakBidMultiplier?: number // e.g. 0.60 (-40%)
+    targetAcosThreshold?: number // e.g. 25%
+    stockoutThresholdDays?: number // e.g. 14 days
+    topOfSearchMultiplier?: number // e.g. +45%
+  }
+  status: 'ACTIVE' | 'PAUSED'
+  executionsCount24h: number
+  estimatedDailySavingsUsd: number
+  lastTriggeredAt: string
+}
+
+export interface HarvestedSearchTerm {
+  id: string
+  campaignName: string
+  adGroupName: string
+  searchTerm: string
+  matchTypeSource: 'AUTO' | 'BROAD' | 'PHRASE'
+  impressions: number
+  clicks: number
+  orders: number
+  spend: number
+  sales: number
+  acos: number
+  cvr: number
+  suggestedAction: 'PROMOTE_EXACT' | 'ADD_NEGATIVE_EXACT' | 'MONITOR'
+  confidenceScore: number
+  status: 'PENDING' | 'PROMOTED' | 'NEGATED' | 'IGNORED'
+}
+
+export interface CannibalizationAlert {
+  id: string
+  keyword: string
+  campaignCount: number
+  conflictingSkus: { sku: string; title: string; currentBid: number; acos: number }[]
+  combinedMonthlySpend: number
+  wastedSpendEstimate: number
+  recommendation: string
+}
+
+// 2. Supply Chain Hub Types
+export interface DynamicLeadTimeRoute {
+  id: string
+  originPort: string // e.g. "Cảng Cát Lái (HCMC)"
+  destinationPort: string // e.g. "Port of Long Beach / LA"
+  destinationFbaHub: string // e.g. "West Coast (ONT8 / LAX9)"
+  factoryProductionDays: number
+  oceanTransitDays: number
+  portCustomsClearanceDays: number
+  domesticDrayageDays: number
+  fbaCheckinDays: number
+  totalLeadTimeDays: number
+  historicalAverageDays: number
+  congestionDelayDays: number
+  riskFactors: { factor: string; severity: 'HIGH' | 'MEDIUM' | 'LOW'; notes: string }[]
+  seasonalSurgeForecast: string
+}
+
+export interface GeoFbaPlacementOption {
+  id: string
+  strategyName: string
+  description: string
+  fbaPlacementFeePerUnit: number
+  totalPlacementFeeUsd: number
+  inboundFreightCostUsd: number
+  totalInboundCostUsd: number
+  regionalBreakdown: { region: string; warehouseCode: string; percentage: number; units: number }[]
+  avgDeliveryTimeToPrimeBuyer: string // e.g. "1.4 days"
+  savingsVsSingleDestinationUsd: number
+  recommended: boolean
+}
+
+// 3. Brand Intelligence & CRO Types
+export interface CompetitorReverseAsin {
+  id: string
+  competitorAsin: string
+  competitorBrand: string
+  productTitle: string
+  estimatedMonthlyUnits: number
+  estimatedMonthlyRevenueUsd: number
+  price: number
+  bsrRank: number
+  reviewCount: number
+  reviewRating: number
+  sharedTopKeywords: { keyword: string; competitorOrganicRank: number; ourOrganicRank: number; searchVolume: number }[]
+  keywordOverlapScore: number
+  pricingStrategyInsight: string
+}
+
+export interface ConversionDiagnostic {
+  sku: string
+  asin: string
+  title: string
+  sessions7d: number
+  unitSessionPercentage: number // CVR
+  categoryBenchmarkCvr: number
+  ctr: number
+  categoryBenchmarkCtr: number
+  bounceRate: number
+  bottleneckType: 'IMAGE_GALLERY' | 'PRICE_DISCONNECT' | 'BAD_REVIEWS' | 'IRRELEVANT_TRAFFIC' | 'BULLET_POINTS'
+  diagnosisTitleVi: string
+  diagnosisDetailVi: string
+  suggestedActionVi: string
+  estimatedRevenueUpliftMonthly: number
+}
+
+// 4. Compliance & Ops Lead Types
+export interface PoaDocument {
+  id: string
+  issueId: string
+  asin: string
+  productName: string
+  amazonNoticeType: 'INAUTHENTIC_COMPLAINT' | 'FOOD_SAFETY_EXPIRATION' | 'PEST_REGULATION' | 'INTELLECTUAL_PROPERTY'
+  dateReceived: string
+  deadlineDate: string
+  rootCauseAnalysisVi: string
+  rootCauseAnalysisEn: string
+  immediateCorrectiveActionsVi: string
+  immediateCorrectiveActionsEn: string
+  preventiveMeasuresVi: string
+  preventiveMeasuresEn: string
+  attachedEvidence: { name: string; type: string; url: string; verified: boolean }[]
+  status: 'DRAFT' | 'READY_FOR_LEGAL_REVIEW' | 'SUBMITTED_TO_AMAZON' | 'REINSTATED'
+  attorneyApproved: boolean
+}
+
+export interface TrademarkWatch {
+  id: string
+  trademarkName: string
+  serialNumber: string
+  applicantName: string
+  filingDate: string
+  usptoClass: string // e.g. "Class 30: Cocoa & Tea"
+  similarityScore: number // percentage e.g. 88%
+  status: 'PUBLISHED_FOR_OPPOSITION' | 'PENDING_EXAMINATION' | 'OPPOSITION_FILED'
+  oppositionDeadline: string
+  riskAssessmentVi: string
+  recommendedLegalAction: string
+}

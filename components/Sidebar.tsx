@@ -15,6 +15,7 @@ import {
   FileSpreadsheet,
   FileText,
   Flame,
+  Gavel,
   Globe2,
   HeartPulse,
   History,
@@ -28,10 +29,13 @@ import {
   Rocket,
   ShieldAlert,
   ShieldCheck,
+  Ship,
   Sparkles,
+  Target,
   TrendingUp,
   Workflow,
   X,
+  Zap,
 } from 'lucide-react'
 
 interface NavItemConfig {
@@ -39,12 +43,23 @@ interface NavItemConfig {
   label: string
   icon: React.ComponentType<{ size?: number; className?: string }>
   badge?: number | string
-  badgeVariant?: 'red' | 'amber' | 'blue' | 'green'
+  badgeVariant?: 'red' | 'amber' | 'blue' | 'green' | 'purple'
   rolesAllowed?: string[]
 }
 
 export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { activeTab, setActiveTab, currentRole, recommendations, tasks, customerMessages, accountHealth } = useAppState()
+  const {
+    activeTab,
+    setActiveTab,
+    currentRole,
+    workspaceMode,
+    recommendations,
+    tasks,
+    customerMessages,
+    accountHealth,
+    harvestedSearchTerms,
+    poaDocuments,
+  } = useAppState()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   // Calculate badge counts
@@ -52,14 +67,53 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
   const criticalSafetyMessages = customerMessages.filter((m) => m.classification === 'SAFETY_CRITICAL' && m.status !== 'SENT').length
   const openTasksCount = tasks.filter((t) => t.status === 'OPEN' || t.status === 'WAITING_APPROVAL').length
   const openHealthIssues = accountHealth.policyComplianceIssues.filter((i) => i.status === 'OPEN').length
+  const pendingHarvest = harvestedSearchTerms.filter((t) => t.status === 'PENDING').length
 
   const navSections: { title: string; items: NavItemConfig[] }[] = [
+    {
+      title: 'DEEP-TECH DESKS (V2.0)',
+      items: [
+        {
+          id: 'ppc-growth-desk',
+          label: 'PPC & Growth Desk',
+          icon: Zap,
+          badge: pendingHarvest > 0 ? `${pendingHarvest} new` : undefined,
+          badgeVariant: 'purple',
+        },
+        {
+          id: 'supply-chain-hub',
+          label: 'Supply Chain & Geo-FBA',
+          icon: Ship,
+          badge: 'JIT Act',
+          badgeVariant: 'blue',
+        },
+        {
+          id: 'brand-intelligence',
+          label: 'Brand Intel & CRO',
+          icon: Target,
+        },
+        {
+          id: 'compliance-ops-desk',
+          label: 'Legal & POA Builder',
+          icon: Gavel,
+          badge: 'POA Ready',
+          badgeVariant: 'red',
+        },
+        {
+          id: 'supplier-portal',
+          label: 'Supplier Executive View',
+          icon: ShieldCheck,
+          badge: 'VNĐ/USD',
+          badgeVariant: 'green',
+        },
+      ],
+    },
     {
       title: 'AI CORE',
       items: [
         {
           id: 'ai-operations',
-          label: 'AI Operations',
+          label: 'AI Operations Center',
           icon: Sparkles,
           badge: pendingApprovals > 0 ? pendingApprovals : undefined,
           badgeVariant: 'red',
@@ -171,7 +225,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
     },
   ]
 
-  const getBadgeStyle = (variant?: 'red' | 'amber' | 'blue' | 'green') => {
+  const getBadgeStyle = (variant?: 'red' | 'amber' | 'blue' | 'green' | 'purple') => {
     switch (variant) {
       case 'red':
         return 'bg-red-500 text-white font-bold'
@@ -179,6 +233,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         return 'bg-amber-100 text-amber-800 font-semibold'
       case 'green':
         return 'bg-emerald-100 text-emerald-800 font-semibold'
+      case 'purple':
+        return 'bg-purple-100 text-purple-800 font-semibold'
       case 'blue':
       default:
         return 'bg-blue-100 text-blue-800 font-semibold'
@@ -197,25 +253,25 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
       <aside
         className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white transition-all duration-200 ease-in-out lg:static shrink-0 ${
-          isCollapsed ? 'w-[76px]' : 'w-[268px]'
+          isCollapsed ? 'w-[76px]' : 'w-[274px]'
         } ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-blue-900 to-blue-700 text-base font-extrabold text-white shadow-md shadow-blue-900/10">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-indigo-950 to-blue-800 text-base font-extrabold text-white shadow-md shadow-blue-900/10">
               V
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-black tracking-wider text-slate-900">VEXIM</span>
-                  <span className="rounded bg-blue-100 px-1.5 py-0.2 text-[9px] font-mono font-bold text-blue-700">
-                    US V1
+                  <span className="rounded bg-indigo-100 px-1.5 py-0.2 text-[9px] font-mono font-bold text-indigo-800">
+                    v2.0
                   </span>
                 </div>
                 <div className="text-[10px] font-mono tracking-wider text-slate-400 truncate">
-                  AMAZON OPERATIONS
+                  DEEP-TECH OPERATIONS
                 </div>
               </div>
             )}
@@ -246,7 +302,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           <div className="mx-3 my-2.5 flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs">
             <div className="flex items-center gap-2 text-slate-700 font-medium truncate">
               <Globe2 size={14} className="text-blue-600 shrink-0" />
-              <span className="truncate">Amazon US (Live SP-API)</span>
+              <span className="truncate">Amazon US (SP-API Live)</span>
             </div>
             <span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-500" title="Connected to SP-API" />
           </div>
@@ -288,7 +344,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                           isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
                         } ${
                           isActive
-                            ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                            ? 'bg-indigo-600 text-white font-semibold shadow-xs'
                             : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
@@ -326,8 +382,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
             <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-600">
               <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
               <div className="min-w-0 flex-1 truncate">
-                <div className="font-semibold text-slate-800 truncate">Tenant Isolation Active</div>
-                <div className="text-[10px] text-slate-400 truncate">SOC2 & SP-API Guard</div>
+                <div className="font-semibold text-slate-800 truncate">Multi-Tenant Guard Active</div>
+                <div className="text-[10px] text-slate-400 truncate">SOC2 & SP-API Isolation</div>
               </div>
             </div>
           ) : (

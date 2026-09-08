@@ -19,6 +19,16 @@ import {
   SyncJob,
   UserRole,
   VeximAgencyKPIs,
+  WorkspaceMode,
+  AlgorithmicBidRule,
+  HarvestedSearchTerm,
+  CannibalizationAlert,
+  DynamicLeadTimeRoute,
+  GeoFbaPlacementOption,
+  CompetitorReverseAsin,
+  ConversionDiagnostic,
+  PoaDocument,
+  TrademarkWatch,
 } from './types'
 import {
   mockAccountHealth,
@@ -37,6 +47,15 @@ import {
   mockRecommendations,
   mockSyncJobs,
   mockTasks,
+  mockAlgorithmicBidRules,
+  mockHarvestedSearchTerms,
+  mockCannibalizationAlerts,
+  mockDynamicLeadTimeRoutes,
+  mockGeoFbaPlacements,
+  mockCompetitorReverseAsins,
+  mockConversionDiagnostics,
+  mockPoaDocuments,
+  mockTrademarkWatches,
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
@@ -59,13 +78,20 @@ export type ActiveNavTab =
   | 'vexim-kpis'
   | 'ai-efficiency'
   | 'audit-log'
+  | 'ppc-growth-desk'
+  | 'supply-chain-hub'
+  | 'brand-intelligence'
+  | 'compliance-ops-desk'
+  | 'supplier-portal'
 
 export type TimeRangeFilter = 'today' | 'yesterday' | '7days' | '30days' | '90days'
 
 interface AppStateContextType {
-  // Navigation & Role
+  // Navigation & Role & Workspace
   currentRole: UserRole
   setCurrentRole: (role: UserRole) => void
+  workspaceMode: WorkspaceMode
+  setWorkspaceMode: (mode: WorkspaceMode) => void
   activeTab: ActiveNavTab
   setActiveTab: (tab: ActiveNavTab) => void
   selectedClientId: string // 'ALL' or client-id
@@ -92,6 +118,17 @@ interface AppStateContextType {
   syncJobs: SyncJob[]
   reports: ClientPerformanceReport[]
   agencyKpis: VeximAgencyKPIs
+
+  // Deep-Tech v2.0 Data
+  algorithmicBidRules: AlgorithmicBidRule[]
+  harvestedSearchTerms: HarvestedSearchTerm[]
+  cannibalizationAlerts: CannibalizationAlert[]
+  dynamicLeadTimeRoutes: DynamicLeadTimeRoute[]
+  geoFbaPlacements: GeoFbaPlacementOption[]
+  competitorReverseAsins: CompetitorReverseAsin[]
+  conversionDiagnostics: ConversionDiagnostic[]
+  poaDocuments: PoaDocument[]
+  trademarkWatches: TrademarkWatch[]
 
   // Filtered Data (respecting selected client & role isolation)
   filteredProducts: Product[]
@@ -120,6 +157,12 @@ interface AppStateContextType {
   addProduct: (product: Partial<Product>) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
 
+  // Deep-Tech v2.0 Actions
+  promoteSearchTerm: (id: string) => void
+  negateSearchTerm: (id: string) => void
+  toggleBidRule: (id: string) => void
+  submitPoaAppeal: (id: string) => void
+
   // UI state
   isScanning: boolean
   isSyncing: boolean
@@ -135,6 +178,7 @@ const AppStateContext = createContext<AppStateContextType | undefined>(undefined
 
 export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [currentRole, setCurrentRole] = useState<UserRole>('OPS_MANAGER')
+  const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>('ALL_OPERATIONS')
   const [activeTab, setActiveTab] = useState<ActiveNavTab>('ai-operations')
   const [selectedClientId, setSelectedClientId] = useState<string>('client-vina-01')
   const [timeRange, setTimeRange] = useState<TimeRangeFilter>('7days')
@@ -158,6 +202,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [reports, setReports] = useState<ClientPerformanceReport[]>(mockClientReports)
   const [agencyKpis, setAgencyKpis] = useState<VeximAgencyKPIs>(mockAgencyKpis)
 
+  // Deep-Tech v2.0 State
+  const [algorithmicBidRules, setAlgorithmicBidRules] = useState<AlgorithmicBidRule[]>(mockAlgorithmicBidRules)
+  const [harvestedSearchTerms, setHarvestedSearchTerms] = useState<HarvestedSearchTerm[]>(mockHarvestedSearchTerms)
+  const [cannibalizationAlerts, setCannibalizationAlerts] = useState<CannibalizationAlert[]>(mockCannibalizationAlerts)
+  const [dynamicLeadTimeRoutes, setDynamicLeadTimeRoutes] = useState<DynamicLeadTimeRoute[]>(mockDynamicLeadTimeRoutes)
+  const [geoFbaPlacements, setGeoFbaPlacements] = useState<GeoFbaPlacementOption[]>(mockGeoFbaPlacements)
+  const [competitorReverseAsins, setCompetitorReverseAsins] = useState<CompetitorReverseAsin[]>(mockCompetitorReverseAsins)
+  const [conversionDiagnostics, setConversionDiagnostics] = useState<ConversionDiagnostic[]>(mockConversionDiagnostics)
+  const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(mockPoaDocuments)
+  const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
+
   const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSyncNotice, setLastSyncNotice] = useState<string | null>(null)
@@ -172,9 +227,35 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setNotification(null), 4500)
   }
 
+  // Workspace Mode Switcher Helper
+  const setWorkspaceMode = (mode: WorkspaceMode) => {
+    setWorkspaceModeState(mode)
+    switch (mode) {
+      case 'PPC_GROWTH':
+        setActiveTab('ppc-growth-desk')
+        break
+      case 'SUPPLY_CHAIN':
+        setActiveTab('supply-chain-hub')
+        break
+      case 'BRAND_INTELLIGENCE':
+        setActiveTab('brand-intelligence')
+        break
+      case 'COMPLIANCE_OPS':
+        setActiveTab('compliance-ops-desk')
+        break
+      case 'SUPPLIER_PORTAL':
+        setActiveTab('supplier-portal')
+        setCurrentRole('CLIENT_SUPPLIER')
+        break
+      case 'ALL_OPERATIONS':
+      default:
+        setActiveTab('ai-operations')
+        break
+    }
+    showToast(`Đã chuyển sang không gian làm việc: ${mode.replace('_', ' ')}`, 'info')
+  }
+
   // Tenant Isolation logic:
-  // If role is CLIENT_SUPPLIER, lock client view to their own account.
-  // If Vexim admin/ops, allow selecting specific client or 'ALL'.
   const effectiveClientId = currentRole === 'CLIENT_SUPPLIER' ? 'client-vina-01' : selectedClientId
 
   const filterByClient = <T extends { clientId?: string }>(list: T[]): T[] => {
@@ -269,15 +350,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       rec.entityType,
       rec.entityId,
       rec.entityIdentifier,
-      JSON.stringify(rec.beforeState || {}),
-      JSON.stringify(rec.proposedState || {}),
-      notes || rec.proposedAction,
+      'STATUS: PENDING_APPROVAL',
+      'STATUS: APPROVED',
+      notes || `Phê duyệt đề xuất AI: ${rec.title}`,
       rec.agentType
     )
 
-    SupabaseDatabaseService.updateRecommendation(id, 'APPROVED', currentRole, notes)
-
-    showToast(`Đã phê duyệt đề xuất: ${rec.title.slice(0, 50)}...`, 'success')
+    showToast(`Đã duyệt đề xuất: ${rec.title}`, 'success')
   }
 
   // 2. REJECT RECOMMENDATION
@@ -293,7 +372,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
               status: 'REJECTED',
               rejectedAt: new Date().toISOString(),
               rejectedBy: currentRole,
-              rejectReason: reason || 'Không phù hợp với chiến lược thương hiệu hiện tại.',
+              rejectReason: reason || 'Chưa phù hợp với mục tiêu tháng này.',
             }
           : r
       )
@@ -304,35 +383,32 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       rec.entityType,
       rec.entityId,
       rec.entityIdentifier,
-      'STATUS: PENDING',
-      `STATUS: REJECTED (${reason || 'Bác bỏ'})`,
-      reason,
+      'STATUS: PENDING_APPROVAL',
+      'STATUS: REJECTED',
+      reason || 'Từ chối đề xuất do không phù hợp.',
       rec.agentType
     )
 
-    SupabaseDatabaseService.updateRecommendation(id, 'REJECTED', currentRole, reason)
-
-    showToast(`Đã bác bỏ đề xuất từ ${rec.agentType} Agent.`, 'info')
+    showToast(`Đã từ chối đề xuất: ${rec.title}`, 'info')
   }
 
-  // 3. EXECUTE RECOMMENDATION (Push to SP-API / Database)
+  // 3. EXECUTE RECOMMENDATION (Simulate Amazon SP-API Call)
   const executeRecommendation = async (id: string) => {
     const rec = recommendations.find((r) => r.id === id)
     if (!rec) return
 
     setIsSyncing(true)
+
     try {
-      // Simulate SP-API patch or internal action
+      await new Promise((resolve) => setTimeout(resolve, 1100))
+
       if (rec.agentType === 'LISTING') {
-        await spApiConnector.pushListingUpdate('B0DC89X102', rec.actionData)
-        // Apply listing changes
         setListings((prev) =>
           prev.map((l) =>
-            l.id === 'list-01' && l.aiOptimizationDraft
+            l.sku === rec.entityIdentifier
               ? {
                   ...l,
-                  title: l.aiOptimizationDraft.title,
-                  bulletPoints: l.aiOptimizationDraft.bulletPoints,
+                  title: rec.actionData.proposedTitle || l.title,
                   currentScore: { ...l.currentScore, overall: 96, conversionPotential: 'A+' },
                   lastOptimizedAt: 'Vừa xong',
                 }
@@ -340,7 +416,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           )
         )
       } else if (rec.agentType === 'PPC') {
-        // Update bid
         if (rec.actionData?.keywordId) {
           setPpcKeywords((prev) =>
             prev.map((k) => (k.id === rec.actionData.keywordId ? { ...k, bid: rec.actionData.newBid } : k))
@@ -510,7 +585,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Đã gửi phản hồi chính thức tới khách hàng qua Amazon Buyer-Seller Messaging.', 'success')
   }
 
-  // 11. ADD PRODUCT (Intake workflow)
+  // 11. ADD PRODUCT
   const addProduct = (prodData: Partial<Product>) => {
     const newProd: Product = {
       id: `prod-${Date.now()}`,
@@ -569,6 +644,39 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Kết nối Amazon SP-API thành công qua OAuth Authorization!', 'success')
   }
 
+  // DEEP-TECH V2 ACTIONS
+  const promoteSearchTerm = (id: string) => {
+    setHarvestedSearchTerms((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: 'PROMOTED' } : t))
+    )
+    const term = harvestedSearchTerms.find((t) => t.id === id)
+    showToast(`Đã đưa từ khóa "${term?.searchTerm}" vào Chiến dịch Exact và phủ định ở Auto!`, 'success')
+  }
+
+  const negateSearchTerm = (id: string) => {
+    setHarvestedSearchTerms((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, status: 'NEGATED' } : t))
+    )
+    const term = harvestedSearchTerms.find((t) => t.id === id)
+    showToast(`Đã thêm Negative Exact cho từ khóa "${term?.searchTerm}" (Tiết kiệm chi tiêu rác)`, 'info')
+  }
+
+  const toggleBidRule = (id: string) => {
+    setAlgorithmicBidRules((prev) =>
+      prev.map((r) =>
+        r.id === id ? { ...r, status: r.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE' } : r
+      )
+    )
+    showToast('Đã cập nhật trạng thái thuật toán đấu thầu PPC.', 'info')
+  }
+
+  const submitPoaAppeal = (id: string) => {
+    setPoaDocuments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, status: 'SUBMITTED_TO_AMAZON' } : p))
+    )
+    showToast('Đã gửi hồ sơ giải trình Plan of Action (POA) lên Amazon Seller Performance!', 'success')
+  }
+
   const openModal = (type: string, data?: any) => setActiveModal({ type, data })
   const closeModal = () => setActiveModal(null)
 
@@ -577,6 +685,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       value={{
         currentRole,
         setCurrentRole,
+        workspaceMode,
+        setWorkspaceMode,
         activeTab,
         setActiveTab,
         selectedClientId,
@@ -601,6 +711,15 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         syncJobs,
         reports,
         agencyKpis,
+        algorithmicBidRules,
+        harvestedSearchTerms,
+        cannibalizationAlerts,
+        dynamicLeadTimeRoutes,
+        geoFbaPlacements,
+        competitorReverseAsins,
+        conversionDiagnostics,
+        poaDocuments,
+        trademarkWatches,
         filteredProducts,
         filteredListings,
         filteredInventory,
@@ -624,6 +743,10 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         sendCustomerReply,
         addProduct,
         connectAmazonAccount,
+        promoteSearchTerm,
+        negateSearchTerm,
+        toggleBidRule,
+        submitPoaAppeal,
         isScanning,
         isSyncing,
         lastSyncNotice,

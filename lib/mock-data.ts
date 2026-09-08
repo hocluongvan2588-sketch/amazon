@@ -1487,3 +1487,353 @@ export const mockAgencyKpis: VeximAgencyKPIs = {
     amazonGrowth: 12500,
   },
 }
+
+// ==========================================
+// VEXIM PLATFORM V2.0 - DEEP TECH MOCK DATA
+// ==========================================
+
+import {
+  AlgorithmicBidRule,
+  HarvestedSearchTerm,
+  CannibalizationAlert,
+  DynamicLeadTimeRoute,
+  GeoFbaPlacementOption,
+  CompetitorReverseAsin,
+  ConversionDiagnostic,
+  PoaDocument,
+  TrademarkWatch,
+} from './types'
+
+export const mockAlgorithmicBidRules: AlgorithmicBidRule[] = [
+  {
+    id: 'rule-dayparting-01',
+    ruleName: 'Q4 US Day-parting Peak Hours Multiplier',
+    ruleType: 'DAY_PARTING',
+    targetCampaignIds: ['cmp-sp-01', 'cmp-sp-02'],
+    parameters: {
+      peakHoursBidMultiplier: 1.25, // +25% from 18:00 - 23:00 EST
+      offPeakBidMultiplier: 0.60,   // -40% from 01:00 - 06:00 EST
+      topOfSearchMultiplier: 1.35,
+    },
+    status: 'ACTIVE',
+    executionsCount24h: 48,
+    estimatedDailySavingsUsd: 46.80,
+    lastTriggeredAt: '2026-09-08T06:00:00Z',
+  },
+  {
+    id: 'rule-inventory-throttle-02',
+    ruleName: 'Low FBA Stock Auto-Bid Dampener (OOS Shield)',
+    ruleType: 'INVENTORY_THROTTLE',
+    targetCampaignIds: ['cmp-sp-01'],
+    parameters: {
+      stockoutThresholdDays: 14,
+      offPeakBidMultiplier: 0.70, // Giảm 30% bid khi tồn < 14 ngày để tránh đứt hàng đột ngột
+    },
+    status: 'ACTIVE',
+    executionsCount24h: 12,
+    estimatedDailySavingsUsd: 32.50,
+    lastTriggeredAt: '2026-09-08T07:15:00Z',
+  },
+  {
+    id: 'rule-target-acos-03',
+    ruleName: 'Dynamic Target ACOS Auto-Bid Balancer',
+    ruleType: 'TARGET_ACOS_TUNER',
+    targetCampaignIds: ['cmp-sp-02', 'cmp-sb-01'],
+    parameters: {
+      targetAcosThreshold: 22.0,
+    },
+    status: 'ACTIVE',
+    executionsCount24h: 84,
+    estimatedDailySavingsUsd: 68.20,
+    lastTriggeredAt: '2026-09-08T07:45:00Z',
+  },
+]
+
+export const mockHarvestedSearchTerms: HarvestedSearchTerm[] = [
+  {
+    id: 'harvest-01',
+    campaignName: 'SP - Dark Chocolate - Auto Discovery',
+    adGroupName: 'Close Match - 70% Bars',
+    searchTerm: 'vietnamese single origin dark chocolate 70%',
+    matchTypeSource: 'AUTO',
+    impressions: 4820,
+    clicks: 142,
+    orders: 34,
+    spend: 128.40,
+    sales: 849.66,
+    acos: 15.11,
+    cvr: 23.94,
+    suggestedAction: 'PROMOTE_EXACT',
+    confidenceScore: 98,
+    status: 'PENDING',
+  },
+  {
+    id: 'harvest-02',
+    campaignName: 'SP - Cocoa Powder - Broad Scale',
+    adGroupName: 'Baking Powder Broad',
+    searchTerm: 'cheap baking powder bulk 10kg restaurant',
+    matchTypeSource: 'BROAD',
+    impressions: 2940,
+    clicks: 68,
+    orders: 0,
+    spend: 74.80,
+    sales: 0,
+    acos: 0,
+    cvr: 0,
+    suggestedAction: 'ADD_NEGATIVE_EXACT',
+    confidenceScore: 95,
+    status: 'PENDING',
+  },
+  {
+    id: 'harvest-03',
+    campaignName: 'SP - Dark Chocolate - Broad',
+    adGroupName: 'Artisan Chocolate Broad',
+    searchTerm: 'keto dairy free dark chocolate bar',
+    matchTypeSource: 'BROAD',
+    impressions: 6200,
+    clicks: 188,
+    orders: 29,
+    spend: 169.20,
+    sales: 724.71,
+    acos: 23.35,
+    cvr: 15.42,
+    suggestedAction: 'PROMOTE_EXACT',
+    confidenceScore: 92,
+    status: 'PENDING',
+  },
+  {
+    id: 'harvest-04',
+    campaignName: 'SP - Cocoa Powder - Auto',
+    adGroupName: 'Loose Match',
+    searchTerm: 'hot chocolate mix with marshmallows sweet',
+    matchTypeSource: 'AUTO',
+    impressions: 1840,
+    clicks: 45,
+    orders: 1,
+    spend: 58.50,
+    sales: 16.99,
+    acos: 344.32,
+    cvr: 2.22,
+    suggestedAction: 'ADD_NEGATIVE_EXACT',
+    confidenceScore: 89,
+    status: 'PENDING',
+  },
+]
+
+export const mockCannibalizationAlerts: CannibalizationAlert[] = [
+  {
+    id: 'cannibal-01',
+    keyword: 'organic dark chocolate bar 70',
+    campaignCount: 2,
+    conflictingSkus: [
+      { sku: 'VXM-COCOA-70DK', title: '70% Dark Chocolate Pack 4', currentBid: 1.45, acos: 18.2 },
+      { sku: 'VXM-COCOA-85DK', title: '85% Extra Dark Bar Pack 4', currentBid: 1.60, acos: 29.4 },
+    ],
+    combinedMonthlySpend: 420.50,
+    wastedSpendEstimate: 118.00,
+    recommendation: 'Phân tách từ khóa "organic dark chocolate bar 70" chỉ nhắm vào SKU 70DK, SKU 85DK chuyển sang từ khóa ngách "85% intense bitter chocolate" để tránh đẩy giá thầu nội bộ.',
+  },
+]
+
+export const mockDynamicLeadTimeRoutes: DynamicLeadTimeRoute[] = [
+  {
+    id: 'route-catlai-lax',
+    originPort: 'Cảng Cát Lái (Hồ Chí Minh)',
+    destinationPort: 'Port of Long Beach / Los Angeles, CA',
+    destinationFbaHub: 'West Coast Regional Hub (ONT8 / LAX9)',
+    factoryProductionDays: 14,
+    oceanTransitDays: 22,
+    portCustomsClearanceDays: 4,
+    domesticDrayageDays: 2,
+    fbaCheckinDays: 5,
+    totalLeadTimeDays: 47,
+    historicalAverageDays: 38,
+    congestionDelayDays: 9,
+    riskFactors: [
+      { factor: 'Mùa cao điểm xuất hàng Q4 (Peak Season Surcharge)', severity: 'HIGH', notes: 'Tàu container tuyến Trans-Pacific kín chỗ, đề xuất book tàu trước 3 tuần' },
+      { factor: 'Kiểm tra FDA ngẫu nhiên tại Cảng Los Angeles', severity: 'MEDIUM', notes: 'Cần nộp FDA Prior Notice điện tử trước khi tàu cập bến 5 ngày' },
+    ],
+    seasonalSurgeForecast: 'Dự báo tháng 10-11/2026 thời gian thông quan tại LA kéo dài thêm +5 đến +7 ngày do tắc nghẽn kho cảng.',
+  },
+  {
+    id: 'route-haiphong-ny',
+    originPort: 'Cảng Hải Phòng (Lạch Huyện)',
+    destinationPort: 'Port of New York / New Jersey',
+    destinationFbaHub: 'East Coast Regional Hub (TEB9 / ABE8)',
+    factoryProductionDays: 12,
+    oceanTransitDays: 32,
+    portCustomsClearanceDays: 3,
+    domesticDrayageDays: 3,
+    fbaCheckinDays: 6,
+    totalLeadTimeDays: 56,
+    historicalAverageDays: 48,
+    congestionDelayDays: 8,
+    riskFactors: [
+      { factor: 'Thời gian đi đường biển qua kênh đào Suez/Panama', severity: 'HIGH', notes: 'Hạn hán kênh đào Panama có thể làm trễ 4-6 ngày' },
+    ],
+    seasonalSurgeForecast: 'Tuyến Bờ Đông ổn định hơn về thông quan nhưng lead-time dài hơn bờ Tây 9 ngày.',
+  },
+]
+
+export const mockGeoFbaPlacements: GeoFbaPlacementOption[] = [
+  {
+    id: 'placement-split-opt',
+    strategyName: 'Amazon Inbound Multi-Location Split (Tối ưu Phí FBA 2026)',
+    description: 'Chia lô hàng 3,000 units thành 2 điểm nhận: 60% Bờ Tây (ONT8 - CA) + 40% Bờ Đông (TEB9 - NJ). Miễn giảm hoàn toàn Inbound Placement Service Fee.',
+    fbaPlacementFeePerUnit: 0.00,
+    totalPlacementFeeUsd: 0.00,
+    inboundFreightCostUsd: 1420.00,
+    totalInboundCostUsd: 1420.00,
+    regionalBreakdown: [
+      { region: 'Bờ Tây (California & Pacific)', warehouseCode: 'ONT8 (Moreno Valley, CA)', percentage: 60, units: 1800 },
+      { region: 'Bờ Đông (New York & Tristate)', warehouseCode: 'TEB9 (Somerset, NJ)', percentage: 40, units: 1200 },
+    ],
+    avgDeliveryTimeToPrimeBuyer: '1.2 ngày (92% khách Prime nhận Same-Day / 1-Day)',
+    savingsVsSingleDestinationUsd: 840.00,
+    recommended: true,
+  },
+  {
+    id: 'placement-single-west',
+    strategyName: 'Minimal Inbound Splits (Gửi 1 điểm duy nhất Bờ Tây)',
+    description: 'Gửi toàn bộ 3,000 units vào 1 kho ONT8 (California). Amazon tự luân chuyển nội bộ và thu phí Inbound Placement Fee $0.28/unit.',
+    fbaPlacementFeePerUnit: 0.28,
+    totalPlacementFeeUsd: 840.00,
+    inboundFreightCostUsd: 980.00,
+    totalInboundCostUsd: 1820.00,
+    regionalBreakdown: [
+      { region: 'Bờ Tây (Toàn bộ lô hàng)', warehouseCode: 'ONT8 (Moreno Valley, CA)', percentage: 100, units: 3000 },
+    ],
+    avgDeliveryTimeToPrimeBuyer: '2.4 ngày (Amazon mất 5-7 ngày FC Transfer)',
+    savingsVsSingleDestinationUsd: 0.00,
+    recommended: false,
+  },
+]
+
+export const mockCompetitorReverseAsins: CompetitorReverseAsin[] = [
+  {
+    id: 'comp-lindt-01',
+    competitorAsin: 'B079NB7N64',
+    competitorBrand: 'Lindt Excellence',
+    productTitle: 'Lindt Excellence 70% Cocoa Dark Chocolate Bar, 3.5 oz (Pack of 12)',
+    estimatedMonthlyUnits: 14200,
+    estimatedMonthlyRevenueUsd: 355000,
+    price: 24.99,
+    bsrRank: 42,
+    reviewCount: 18940,
+    reviewRating: 4.7,
+    sharedTopKeywords: [
+      { keyword: 'dark chocolate bar 70', competitorOrganicRank: 2, ourOrganicRank: 8, searchVolume: 42100 },
+      { keyword: 'single origin dark chocolate', competitorOrganicRank: 12, ourOrganicRank: 3, searchVolume: 12400 },
+      { keyword: 'keto organic chocolate bar', competitorOrganicRank: 8, ourOrganicRank: 6, searchVolume: 18500 },
+    ],
+    keywordOverlapScore: 84,
+    pricingStrategyInsight: 'Lindt duy trì pack 12 giá $24.99 ($2.08/bar). Vinacacao có lợi thế hương vị Single Origin Đắk Lắk, đề xuất làm nổi bật "Single Origin Vietnam Cocoa Butter" trên Hero Image 2 để cướp traffic organic.',
+  },
+  {
+    id: 'comp-altereco-02',
+    competitorAsin: 'B08F9Q82LZ',
+    competitorBrand: 'Alter Eco Organic',
+    productTitle: 'Alter Eco Organic 85% Dark Chocolate Bar, Fair Trade Certified',
+    estimatedMonthlyUnits: 6800,
+    estimatedMonthlyRevenueUsd: 169932,
+    price: 24.99,
+    bsrRank: 118,
+    reviewCount: 4320,
+    reviewRating: 4.6,
+    sharedTopKeywords: [
+      { keyword: 'fair trade dark chocolate', competitorOrganicRank: 1, ourOrganicRank: 14, searchVolume: 9800 },
+      { keyword: 'vegan dark chocolate bars', competitorOrganicRank: 4, ourOrganicRank: 9, searchVolume: 24000 },
+    ],
+    keywordOverlapScore: 71,
+    pricingStrategyInsight: 'Đối thủ đánh mạnh vào chứng chỉ Fair Trade & Non-GMO. Vinacacao cần đẩy mạnh chứng chỉ USDA Organic & Vietnam Direct-Trade Farm để kéo điểm chuyển đổi.',
+  },
+]
+
+export const mockConversionDiagnostics: ConversionDiagnostic[] = [
+  {
+    sku: 'VXM-COCOA-70DK',
+    asin: 'B0DC89X102',
+    title: 'Vinacacao 70% Dark Chocolate Bar 4-Pack (Single Origin Vietnam)',
+    sessions7d: 4820,
+    unitSessionPercentage: 14.8, // CVR = 14.8% (Rất tốt)
+    categoryBenchmarkCvr: 11.2,
+    ctr: 0.48, // CTR hơi thấp (0.48% vs Benchmark 0.65%)
+    categoryBenchmarkCtr: 0.65,
+    bounceRate: 34.2,
+    bottleneckType: 'IMAGE_GALLERY',
+    diagnosisTitleVi: 'Tỷ lệ nhấp (CTR) thấp hơn chuẩn ngành 26% do Ảnh đại diện (Main Image)',
+    diagnosisDetailVi: 'Khách hàng tìm kiếm thấy ảnh bao bì hiện tại có độ tương phản phông trắng chưa bắt mắt, thiếu huy hiệu "Single Origin Dak Lak Award Winning". Khi khách bấm vào thì tỷ lệ mua rất cao (14.8%).',
+    suggestedActionVi: 'Thay ảnh chính Hero Image với góc chụp nghiêng 45 độ hiển thị cả thanh chocolate bẻ đôi bóng mượt và bao bì sang trọng để kéo CTR từ 0.48% lên 0.72%.',
+    estimatedRevenueUpliftMonthly: 4620.00,
+  },
+  {
+    sku: 'VXM-COCOA-PWD500',
+    asin: 'B0DC90Y203',
+    title: 'Pure Organic Vietnamese Cocoa Powder 500g (Unsweetened)',
+    sessions7d: 3120,
+    unitSessionPercentage: 7.4, // CVR = 7.4% (Thấp hơn benchmark 10.5%)
+    categoryBenchmarkCvr: 10.5,
+    ctr: 0.82, // CTR tốt
+    categoryBenchmarkCtr: 0.65,
+    bounceRate: 58.6,
+    bottleneckType: 'PRICE_DISCONNECT',
+    diagnosisTitleVi: 'Tỷ lệ chuyển đổi (CVR) sụt giảm do thiếu bảng so sánh dinh dưỡng & công thức pha chế',
+    diagnosisDetailVi: 'Traffic vào rất đông (CTR 0.82%) nhưng 58% khách thoát trang vì không biết bột cacao nguyên chất này có dùng làm bánh Brownie và uống nóng được không.',
+    suggestedActionVi: 'Thêm module A+ Brand Story hiển thị 3 công thức đồ uống chuẩn Mỹ (Keto Smoothie, Hot Cocoa, Brownie Recipe) và chứng chỉ FDA Tested.',
+    estimatedRevenueUpliftMonthly: 2840.00,
+  },
+]
+
+export const mockPoaDocuments: PoaDocument[] = [
+  {
+    id: 'poa-foodsafety-01',
+    issueId: 'case-amazon-health-01',
+    asin: 'B0DC90Y203',
+    productName: 'Pure Organic Vietnamese Cocoa Powder 500g',
+    amazonNoticeType: 'FOOD_SAFETY_EXPIRATION',
+    dateReceived: '2026-09-06T10:00:00Z',
+    deadlineDate: '2026-09-13T23:59:59Z',
+    rootCauseAnalysisVi: 'Nguyên nhân gốc rễ: Một khách hàng nhận gói bột cacao và phàn nàn hạn sử dụng bị mờ nhạt do mực in phun nhiệt trên dây chuyền đóng gói số 2 tại nhà máy Bến Tre bị lệch cảm biến laser.',
+    rootCauseAnalysisEn: 'Root Cause: A customer received a cocoa powder pouch where the expiration date (EXP: 12/2027) was faintly printed due to a thermal inkjet sensor misalignment on Packaging Line #2 at our Ben Tre manufacturing facility.',
+    immediateCorrectiveActionsVi: 'Hành động khắc phục ngay lập tức: (1) Đã hoàn tiền 100% kèm thư xin lỗi và gửi tặng 1 gói mới có date in rõ ràng. (2) Tạo lệnh FBA Removal Order kiểm tra toàn bộ 48 gói cùng Batch #VN2026-08 tại kho FBA ONT8.',
+    immediateCorrectiveActionsEn: 'Immediate Corrective Actions: (1) 100% refund issued with formal apology and complimentary replacement sent. (2) FBA Removal Order #REM-9821 submitted to inspect and quarantine all remaining 48 units of Batch #VN2026-08 at ONT8 fulfillment center.',
+    preventiveMeasuresVi: 'Biện pháp phòng ngừa dài hạn: (1) Nâng cấp hệ thống máy in date sang công nghệ khắc Laser vĩnh viễn (Laser Date Coding). (2) Bổ sung trạm kiểm tra chất lượng tự động (Vision Inspection System) 100% sản phẩm trước khi xuất xưởng.',
+    preventiveMeasuresEn: 'Long-term Preventive Measures: (1) Upgraded facility packaging lines to permanent Fiber Laser Date Coders. (2) Installed high-speed automated Optical Inspection Camera to verify 100% legibility of Lot & Expiry on outer cartons before ocean shipment.',
+    attachedEvidence: [
+      { name: 'Certificate of Analysis (COA) Batch #VN2026-08', type: 'PDF', url: '/docs/coa-vn2026.pdf', verified: true },
+      { name: 'Commercial Invoice & Factory Audit Report', type: 'PDF', url: '/docs/factory-audit.pdf', verified: true },
+      { name: 'Laser Coding Upgrade Work Order & Photos', type: 'IMAGE', url: '/docs/laser-upgrade.jpg', verified: true },
+    ],
+    status: 'READY_FOR_LEGAL_REVIEW',
+    attorneyApproved: true,
+  },
+]
+
+export const mockTrademarkWatches: TrademarkWatch[] = [
+  {
+    id: 'uspto-watch-01',
+    trademarkName: 'VINACACAO TROPICALS',
+    serialNumber: '98472910',
+    applicantName: 'Global Brands Import LLC (Delaware, USA)',
+    filingDate: '2026-08-14',
+    usptoClass: 'Class 30: Cocoa, chocolate confectionery, bakery mixes',
+    similarityScore: 89,
+    status: 'PUBLISHED_FOR_OPPOSITION',
+    oppositionDeadline: '2026-10-15',
+    riskAssessmentVi: 'RỦI RO CAO: Đơn vị trung gian tại Delaware đang nộp đơn đăng ký nhãn hiệu có tiền tố VINACACAO trong cùng nhóm ngành Class 30. Nếu không nộp đơn phản đối (Notice of Opposition) trước ngày 15/10/2026, họ có thể kiện ngược lại store Vinacacao trên Amazon US.',
+    recommendedLegalAction: 'Yêu cầu luật sư sở hữu trí tuệ tại Mỹ nộp ngay "Notice of Opposition" dựa trên quyền sở hữu thương hiệu Vinacacao đã đăng ký tại Việt Nam và quyền sử dụng trước (Prior Use in Commerce) tại Mỹ.',
+  },
+  {
+    id: 'uspto-watch-02',
+    trademarkName: 'AN AN PURE INCENSE',
+    serialNumber: '98501244',
+    applicantName: 'Zen Living Goods Inc (California, USA)',
+    filingDate: '2026-08-28',
+    usptoClass: 'Class 03: Incense, essential oils, aromatherapy',
+    similarityScore: 78,
+    status: 'PENDING_EXAMINATION',
+    oppositionDeadline: '2026-11-30',
+    riskAssessmentVi: 'RỦI RO TRUNG BÌNH: Đang trong giai đoạn thẩm tra tại USPTO. Thẩm định viên có khả năng sẽ từ chối do trùng lặp nhãn hiệu Thảo Mộc An An đã nộp trước.',
+    recommendedLegalAction: 'Theo dõi tiến trình thẩm tra (USPTO Office Action) và chuẩn bị thư cảnh báo (Cease & Desist) nếu nhãn hiệu vượt qua vòng thẩm tra.',
+  },
+]

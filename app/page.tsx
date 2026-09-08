@@ -6,7 +6,7 @@ import { Sidebar } from '@/components/Sidebar'
 import { TopHeader } from '@/components/TopHeader'
 import { AIChatDrawer } from '@/components/AIChatDrawer'
 
-// Views
+// Standard Views
 import { AIOperationsCenter } from '@/components/views/AIOperationsCenter'
 import { AmazonOverview } from '@/components/views/AmazonOverview'
 import { ProductManagement } from '@/components/views/ProductManagement'
@@ -25,6 +25,13 @@ import { VeximBusinessKpi } from '@/components/views/VeximBusinessKpi'
 import { AIEfficiencyMonitor } from '@/components/views/AIEfficiencyMonitor'
 import { AuditLogView } from '@/components/views/AuditLogView'
 
+// Deep-Tech v2.0 Views
+import { PpcGrowthDesk } from '@/components/views/PpcGrowthDesk'
+import { SupplyChainHub } from '@/components/views/SupplyChainHub'
+import { BrandIntelligenceView } from '@/components/views/BrandIntelligenceView'
+import { ComplianceLegalDesk } from '@/components/views/ComplianceLegalDesk'
+import { SupplierExecutivePortal } from '@/components/views/SupplierExecutivePortal'
+
 // Modals
 import { ApprovalModal } from '@/components/modals/ApprovalModal'
 import { ProductIntakeModal } from '@/components/modals/ProductIntakeModal'
@@ -38,6 +45,19 @@ function MainAppShell() {
 
   const renderActiveView = () => {
     switch (activeTab) {
+      // Deep-Tech v2.0 Desks
+      case 'ppc-growth-desk':
+        return <PpcGrowthDesk />
+      case 'supply-chain-hub':
+        return <SupplyChainHub />
+      case 'brand-intelligence':
+        return <BrandIntelligenceView />
+      case 'compliance-ops-desk':
+        return <ComplianceLegalDesk />
+      case 'supplier-portal':
+        return <SupplierExecutivePortal />
+
+      // Core Views
       case 'ai-operations':
         return <AIOperationsCenter />
       case 'overview':
