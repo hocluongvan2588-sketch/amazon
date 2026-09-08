@@ -6,10 +6,91 @@ import {
   InventoryItem,
   OperationalTask,
   Product,
+  TeamMember,
+  UserRole,
 } from './types'
 
 export class SupabaseDatabaseService {
-  // 1. Fetch Clients
+  // 1. Fetch Users / Team Members from Supabase
+  static async getUsers(): Promise<TeamMember[] | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: true })
+
+      if (error || !data || data.length === 0) return null
+
+      return data.map((u: any) => ({
+        id: u.id,
+        fullName: u.full_name,
+        email: u.email,
+        password: '••••••••',
+        role: u.role as UserRole,
+        department: u.department || 'Vận Hành Vexim',
+        title: u.title || u.department,
+        phone: u.phone || '+84 988 888 888',
+        assignedClientIds: u.client_id ? [u.client_id] : ['ALL'],
+        canApproveHighRisk: !!u.can_approve_high_risk,
+        status: u.is_active ? 'ACTIVE' : 'SUSPENDED',
+        lastActive: u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleTimeString('vi-VN') : 'Gần đây',
+        twoFactorEnabled: !!u.two_factor_enabled,
+        createdAt: u.created_at,
+      }))
+    } catch (err) {
+      console.warn('[Supabase] getUsers error:', err)
+      return null
+    }
+  }
+
+  // 2. Create or Update Staff User on Supabase
+  static async createStaffUser(user: TeamMember): Promise<boolean> {
+    if (!isSupabaseConfigured()) return false
+    try {
+      const { error } = await supabase.from('users').upsert(
+        {
+          id: user.id.startsWith('user-') ? undefined : user.id,
+          email: user.email,
+          full_name: user.fullName,
+          role: user.role,
+          department: user.department,
+          title: user.title,
+          phone: user.phone,
+          can_approve_high_risk: user.canApproveHighRisk,
+          is_active: user.status === 'ACTIVE',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'email' }
+      )
+
+      if (error) {
+        console.warn('[Supabase] createStaffUser error:', error)
+        return false
+      }
+      return true
+    } catch (err) {
+      console.warn('[Supabase] createStaffUser catch error:', err)
+      return false
+    }
+  }
+
+  // 3. Update User Role on Supabase
+  static async updateUserRole(userId: string, role: UserRole): Promise<boolean> {
+    if (!isSupabaseConfigured()) return false
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ role, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+
+      return !error
+    } catch (err) {
+      return false
+    }
+  }
+
+  // 4. Fetch Clients
   static async getClients(): Promise<ClientSupplier[] | null> {
     if (!isSupabaseConfigured()) return null
     try {
@@ -36,12 +117,11 @@ export class SupabaseDatabaseService {
         readinessAverage: 92,
       }))
     } catch (err) {
-      console.warn('[Supabase] Falling back to local state:', err)
       return null
     }
   }
 
-  // 2. Fetch Products
+  // 5. Fetch Products
   static async getProducts(clientId?: string): Promise<Product[] | null> {
     if (!isSupabaseConfigured()) return null
     try {
@@ -95,7 +175,7 @@ export class SupabaseDatabaseService {
     }
   }
 
-  // 3. Save Recommendation Update
+  // 6. Save Recommendation Update
   static async updateRecommendation(
     id: string,
     status: AIRecommendation['status'],
@@ -120,7 +200,7 @@ export class SupabaseDatabaseService {
     }
   }
 
-  // 4. Save Task
+  // 7. Save Task
   static async createTask(task: OperationalTask) {
     if (!isSupabaseConfigured()) return
     try {
@@ -140,7 +220,7 @@ export class SupabaseDatabaseService {
     }
   }
 
-  // 5. Save Activity / Audit Log
+  // 8. Save Activity / Audit Log
   static async createAuditLog(log: AuditLogEntry) {
     if (!isSupabaseConfigured()) return
     try {

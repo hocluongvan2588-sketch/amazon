@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useMemo } from 'react'
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import {
   AccountHealthMetric,
   AIRecommendation,
@@ -288,6 +288,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   const updateTeamMemberRole = (id: string, newRole: UserRole) => {
     setTeamMembers(prev => prev.map(m => m.id === id ? { ...m, role: newRole } : m))
+    SupabaseDatabaseService.updateUserRole(id, newRole)
     showToast('Đã cập nhật phân quyền cho nhân sự thành công!', 'success')
   }
 
@@ -315,8 +316,41 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       phone: memberData.phone || '+84 900 000 000',
     }
     setTeamMembers(prev => [...prev, newMember])
+    SupabaseDatabaseService.createStaffUser(newMember)
     showToast(`Đã cấp tài khoản cho ${newMember.fullName} (${newMember.role})`, 'success')
   }
+
+  // Live Supabase Database Hydration Hook
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadLiveSupabaseData() {
+      try {
+        const [liveUsers, liveClients, liveProducts] = await Promise.all([
+          SupabaseDatabaseService.getUsers(),
+          SupabaseDatabaseService.getClients(),
+          SupabaseDatabaseService.getProducts(),
+        ])
+
+        if (isMounted) {
+          if (liveUsers && liveUsers.length > 0) {
+            setTeamMembers(liveUsers)
+          }
+          if (liveClients && liveClients.length > 0) {
+            setClients(liveClients)
+          }
+          if (liveProducts && liveProducts.length > 0) {
+            setProducts(liveProducts)
+          }
+        }
+      } catch (err) {
+        console.info('[Vexim State] Running in local demo mode with instant memory store.')
+      }
+    }
+
+    loadLiveSupabaseData()
+    return () => { isMounted = false }
+  }, [])
 
   const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
