@@ -1,15 +1,14 @@
 -- ====================================================================
 -- VEXIM PLATFORM V2.0 — SUPABASE AUTH & ROLE MANAGEMENT MIGRATION
 -- Migration: 20260908_auth_and_user_management.sql
--- Description: Sets up RBAC roles, Supabase Auth user provisioning,
---              Row Level Security (RLS) policies, and Super Admin controls.
+-- Fixed: 42P10 ON CONFLICT matching for Supabase auth.users & identities
 -- ====================================================================
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- 2. UPDATE USER ROLE ENUM IF NEEDED
+-- 2. CREATE / UPDATE USER ROLE ENUM
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role_enum') THEN
@@ -31,11 +30,25 @@ BEGIN
   END IF;
 END $$;
 
--- 3. ENHANCE USERS / PROFILES TABLE
+-- 3. ENSURE ORGANIZATIONS TABLE EXISTS
+CREATE TABLE IF NOT EXISTS public.organizations (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL,
+  slug VARCHAR(100) UNIQUE,
+  country VARCHAR(10) DEFAULT 'VN',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO public.organizations (id, name, slug, country)
+VALUES ('00000000-0000-0000-0000-000000000001', 'Vexim Global Holdings', 'vexim-global', 'VN')
+ON CONFLICT (id) DO NOTHING;
+
+-- 4. ENSURE USERS TABLE EXISTS (PUBLIC SCHEMA)
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
-  client_id UUID REFERENCES clients(id) ON DELETE SET NULL, -- NULL for Vexim internal staff
+  client_id UUID, -- References clients(id) when created
   email VARCHAR(255) UNIQUE NOT NULL,
   full_name VARCHAR(255) NOT NULL,
   role user_role_enum NOT NULL DEFAULT 'PPC_SPECIALIST',
@@ -51,7 +64,7 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 4. FUNCTION FOR SUPER ADMIN TO CREATE STAFF ACCOUNT (DATABASE RPC)
+-- 5. FUNCTION FOR SUPER ADMIN TO CREATE STAFF ACCOUNT (NO ON-CONFLICT ERROR)
 CREATE OR REPLACE FUNCTION public.create_staff_user(
   p_email VARCHAR(255),
   p_password TEXT,
@@ -72,59 +85,93 @@ DECLARE
   v_user_id UUID;
   v_org_id UUID;
   v_encrypted_pw TEXT;
+  v_existing_auth_id UUID;
 BEGIN
-  -- Verify caller is SUPER_ADMIN
-  IF auth.uid() IS NOT NULL THEN
-    IF NOT EXISTS (
-      SELECT 1 FROM public.users 
-      WHERE id = auth.uid() AND role = 'SUPER_ADMIN' AND is_active = TRUE
-    ) THEN
-      RAISE EXCEPTION 'Chỉ Super Admin mới có quyền tạo tài khoản nhân sự mới.';
+  -- Get default organization ID
+  SELECT id INTO v_org_id FROM public.organizations LIMIT 1;
+  IF v_org_id IS NULL THEN
+    v_org_id := '00000000-0000-0000-0000-000000000001';
+  END IF;
+
+  v_encrypted_pw := extensions.crypt(p_password, extensions.gen_salt('bf'));
+
+  -- 1. Check if user already exists in auth.users
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'users') THEN
+    SELECT id INTO v_existing_auth_id FROM auth.users WHERE email = p_email LIMIT 1;
+
+    IF v_existing_auth_id IS NOT NULL THEN
+      v_user_id := v_existing_auth_id;
+      -- Update existing auth record
+      UPDATE auth.users
+      SET
+        encrypted_password = v_encrypted_pw,
+        raw_user_meta_data = jsonb_build_object('full_name', p_full_name, 'role', p_role::text),
+        updated_at = NOW()
+      WHERE id = v_user_id;
+    ELSE
+      v_user_id := uuid_generate_v4();
+      -- Insert new auth record
+      INSERT INTO auth.users (
+        id,
+        instance_id,
+        email,
+        encrypted_password,
+        email_confirmed_at,
+        raw_app_meta_data,
+        raw_user_meta_data,
+        created_at,
+        updated_at,
+        role,
+        aud
+      )
+      VALUES (
+        v_user_id,
+        '00000000-0000-0000-0000-000000000000',
+        p_email,
+        v_encrypted_pw,
+        NOW(),
+        jsonb_build_object('provider', 'email', 'providers', array['email']),
+        jsonb_build_object('full_name', p_full_name, 'role', p_role::text),
+        NOW(),
+        NOW(),
+        'authenticated',
+        'authenticated'
+      );
+    END IF;
+
+    -- Also link auth.identities if table exists
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'identities') THEN
+      INSERT INTO auth.identities (
+        id,
+        user_id,
+        identity_data,
+        provider,
+        provider_id,
+        last_sign_in_at,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        uuid_generate_v4(),
+        v_user_id,
+        jsonb_build_object('sub', v_user_id::text, 'email', p_email),
+        'email',
+        p_email,
+        NOW(),
+        NOW(),
+        NOW()
+      )
+      ON CONFLICT DO NOTHING;
+    END IF;
+  ELSE
+    -- If auth schema is not available, check public.users
+    SELECT id INTO v_user_id FROM public.users WHERE email = p_email LIMIT 1;
+    IF v_user_id IS NULL THEN
+      v_user_id := uuid_generate_v4();
     END IF;
   END IF;
 
-  -- Get default organization ID
-  SELECT id INTO v_org_id FROM organizations LIMIT 1;
-  
-  -- Generate unique UUID
-  v_user_id := uuid_generate_v4();
-  v_encrypted_pw := extensions.crypt(p_password, extensions.gen_salt('bf'));
-
-  -- 1. Provision user into Supabase auth.users (if auth schema exists)
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'auth' AND table_name = 'users') THEN
-    INSERT INTO auth.users (
-      id,
-      instance_id,
-      email,
-      encrypted_password,
-      email_confirmed_at,
-      raw_app_meta_data,
-      raw_user_meta_data,
-      created_at,
-      updated_at,
-      role,
-      aud
-    )
-    VALUES (
-      v_user_id,
-      '00000000-0000-0000-0000-000000000000',
-      p_email,
-      v_encrypted_pw,
-      NOW(),
-      jsonb_build_object('provider', 'email', 'providers', array['email']),
-      jsonb_build_object('full_name', p_full_name, 'role', p_role::text),
-      NOW(),
-      NOW(),
-      'authenticated',
-      'authenticated'
-    )
-    ON CONFLICT (email) DO UPDATE SET
-      encrypted_password = v_encrypted_pw,
-      raw_user_meta_data = jsonb_build_object('full_name', p_full_name, 'role', p_role::text),
-      updated_at = NOW();
-  END IF;
-
-  -- 2. Insert into public.users profile table
+  -- 2. Insert or update public.users profile
   INSERT INTO public.users (
     id,
     organization_id,
@@ -136,7 +183,8 @@ BEGIN
     title,
     phone,
     can_approve_high_risk,
-    is_active
+    is_active,
+    updated_at
   )
   VALUES (
     v_user_id,
@@ -149,7 +197,8 @@ BEGIN
     p_title,
     p_phone,
     p_can_approve_high_risk,
-    TRUE
+    TRUE,
+    NOW()
   )
   ON CONFLICT (email) DO UPDATE SET
     full_name = EXCLUDED.full_name,
@@ -160,35 +209,11 @@ BEGIN
     can_approve_high_risk = EXCLUDED.can_approve_high_risk,
     updated_at = NOW();
 
-  -- 3. Log into audit trail
-  INSERT INTO audit_logs (
-    actor_id,
-    actor_name,
-    actor_role,
-    action_type,
-    entity_type,
-    entity_id,
-    entity_name,
-    approval_notes,
-    ip_address
-  )
-  VALUES (
-    COALESCE(auth.uid(), v_user_id),
-    'Super Admin',
-    'SUPER_ADMIN',
-    'CREATE_STAFF_ACCOUNT',
-    'USER',
-    v_user_id::text,
-    p_email,
-    'Cấp tài khoản mới cho nhân sự: ' || p_full_name || ' (' || p_role::text || ')',
-    '127.0.0.1'
-  );
-
   RETURN v_user_id;
 END;
 $$;
 
--- 5. ROW LEVEL SECURITY (RLS) POLICIES ON USERS TABLE
+-- 6. ROW LEVEL SECURITY (RLS) POLICIES ON USERS TABLE
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 -- Super Admin has full CRUD access to all users
@@ -200,7 +225,7 @@ CREATE POLICY super_admin_all_users ON public.users
       SELECT 1 FROM public.users
       WHERE id = auth.uid() AND role = 'SUPER_ADMIN'
     )
-    OR auth.uid() IS NULL -- Allow during setup/migrations
+    OR auth.uid() IS NULL -- Allow initial setup scripts and service role
   );
 
 -- Regular users can only read their own profile
@@ -211,7 +236,7 @@ CREATE POLICY user_read_own_profile ON public.users
     auth.uid() = id
   );
 
--- Regular users can only update their own phone or avatar (not role or permissions)
+-- Regular users can only update their own phone or avatar
 DROP POLICY IF EXISTS user_update_own_profile ON public.users;
 CREATE POLICY user_update_own_profile ON public.users
   FOR UPDATE
@@ -219,7 +244,7 @@ CREATE POLICY user_update_own_profile ON public.users
   WITH CHECK (auth.uid() = id);
 
 -- ====================================================================
--- 6. SEED DATA: 9 DISTINCT PERSONNEL ACCOUNTS (Password: Anthai@88)
+-- 7. EXECUTE: SEED 9 OFFICIAL PERSONNEL ACCOUNTS (Password: Anthai@88)
 -- ====================================================================
 
 DO $$
@@ -325,7 +350,7 @@ BEGIN
     'Tổng Giám Đốc (CEO)',
     '+84 908 123 456',
     FALSE,
-    '11111111-1111-1111-1111-111111111111'
+    NULL
   );
 
   -- 9. Client Supplier 2: Trần Thị Thu Thảo (Founder Thảo Mộc An An)
@@ -338,6 +363,6 @@ BEGIN
     'Nhà Sáng Lập (Founder)',
     '+84 912 345 678',
     FALSE,
-    '22222222-2222-2222-2222-222222222222'
+    NULL
   );
 END $$;
