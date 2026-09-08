@@ -3,6 +3,8 @@
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { Product, ProductDocument } from '@/lib/types'
+import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
+import { Printer } from "lucide-react"
 import {
   AlertCircle,
   AlertOctagon,
@@ -36,6 +38,8 @@ export function ProductManagement() {
   const { filteredProducts, openModal, setActiveTab } = useAppState()
   const [selectedProduct, setSelectedProduct] = useState<Product>(filteredProducts[0] || null)
   const [activeSubTab, setActiveSubTab] = useState<'DETAILS' | 'READINESS' | 'DOCUMENTS' | 'COMPLIANCE'>('READINESS')
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
+  const [labelModalProduct, setLabelModalProduct] = useState<Product | null>(null)
 
   return (
     <div className="space-y-6">
@@ -57,6 +61,16 @@ export function ProductManagement() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              setLabelModalProduct(selectedProduct || filteredProducts[0])
+              setIsLabelModalOpen(true)
+            }}
+            className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-all"
+          >
+            <Printer size={15} className="text-cyan-600" />
+            <span>Xuất Nhãn FNSKU & Box ID (PDF)</span>
+          </button>
           <button
             onClick={() => openModal('PRODUCT_INTAKE')}
             className="flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all"
@@ -431,9 +445,23 @@ export function ProductManagement() {
                     <div className="text-slate-400 text-[10px]">Mã UPC / EAN</div>
                     <div className="font-bold font-mono text-slate-900 mt-0.5">{selectedProduct.upc}</div>
                   </div>
-                  <div className="rounded-lg bg-slate-50 p-3 border border-slate-100">
-                    <div className="text-slate-400 text-[10px]">Mã FNSKU Amazon</div>
-                    <div className="font-bold font-mono text-slate-900 mt-0.5">{selectedProduct.fnsku}</div>
+                  <div className="rounded-lg bg-slate-50 p-3 border border-slate-100 flex items-center justify-between">
+                    <div>
+                      <div className="text-slate-400 text-[10px]">Mã FNSKU Amazon</div>
+                      <div className="font-bold font-mono text-slate-900 mt-0.5">{selectedProduct.fnsku}</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLabelModalProduct(selectedProduct)
+                        setIsLabelModalOpen(true)
+                      }}
+                      className="flex items-center gap-1 rounded bg-cyan-50 px-2 py-1 text-[11px] font-bold text-cyan-700 hover:bg-cyan-100 transition-colors"
+                      title="In nhãn FNSKU Barcode & Box Label PDF"
+                    >
+                      <Printer size={12} />
+                      <span>In Nhãn PDF</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -441,6 +469,13 @@ export function ProductManagement() {
           </div>
         ) : null}
       </div>
+      {/* Barcode & Label Print Modal */}
+      <BarcodeAndLabelPrintModal
+        isOpen={isLabelModalOpen}
+        onClose={() => setIsLabelModalOpen(false)}
+        product={labelModalProduct}
+        allProducts={filteredProducts}
+      />
     </div>
   )
 }

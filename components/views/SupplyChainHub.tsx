@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
+import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
+import { Printer } from "lucide-react"
 import {
   AlertCircle,
   Anchor,
@@ -28,6 +30,8 @@ export function SupplyChainHub() {
   const { dynamicLeadTimeRoutes, geoFbaPlacements, inventory } = useAppState()
   const [selectedRouteId, setSelectedRouteId] = useState<string>('route-catlai-lax')
   const [activeTab, setActiveTab] = useState<'leadtime' | 'geoplacement' | 'buffer3pl'>('leadtime')
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
+  const { products } = useAppState()
 
   const currentRoute = dynamicLeadTimeRoutes.find((r) => r.id === selectedRouteId) || dynamicLeadTimeRoutes[0]
 
@@ -51,8 +55,15 @@ export function SupplyChainHub() {
           </p>
         </div>
 
-        {/* Quick KPI stats */}
-        <div className="flex items-center gap-3">
+        {/* Quick KPI stats and Action */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setIsLabelModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-3.5 py-2.5 text-xs font-bold text-white shadow-xs backdrop-blur-xs transition-all"
+          >
+            <Printer size={15} className="text-cyan-300" />
+            <span>Xuất Nhãn FNSKU & Box ID (PDF)</span>
+          </button>
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-xs text-right">
             <div className="text-[10px] uppercase font-mono text-slate-400">Lead Time Tuyến LAX</div>
             <div className="text-lg font-extrabold text-cyan-400">{currentRoute.totalLeadTimeDays} Ngày</div>
@@ -325,6 +336,13 @@ export function SupplyChainHub() {
           </div>
         </div>
       )}
+      {/* Barcode & Label Print Modal */}
+      <BarcodeAndLabelPrintModal
+        isOpen={isLabelModalOpen}
+        onClose={() => setIsLabelModalOpen(false)}
+        product={products[0] || null}
+        allProducts={products}
+      />
     </div>
   )
 }
