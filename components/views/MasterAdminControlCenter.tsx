@@ -508,14 +508,26 @@ export function MasterAdminControlCenter() {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700">Email công ty:</label>
+                <label className="font-bold text-slate-700">Email tài khoản:</label>
                 <input
                   type="email"
                   required
-                  placeholder="long.hoang@vexim.io"
+                  placeholder="name@gmail.com / name@vexim.io"
                   value={newMemberForm.email}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
                   className="mt-1 w-full rounded-lg border border-slate-200 p-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700">Mật khẩu khởi tạo:</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Anthai@88"
+                  value={newMemberForm.password || 'Anthai@88'}
+                  onChange={(e) => setNewMemberForm({ ...newMemberForm, password: e.target.value })}
+                  className="mt-1 w-full rounded-lg border border-slate-200 p-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
               </div>
 
