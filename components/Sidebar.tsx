@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useAppState, ActiveNavTab } from '@/lib/state-context'
 import {
   Activity,
@@ -9,6 +9,8 @@ import {
   Bot,
   Boxes,
   CheckSquare,
+  ChevronLeft,
+  ChevronRight,
   FileSpreadsheet,
   FileText,
   Flame,
@@ -42,6 +44,7 @@ interface NavItemConfig {
 
 export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { activeTab, setActiveTab, currentRole, recommendations, tasks, customerMessages, accountHealth } = useAppState()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   // Calculate badge counts
   const pendingApprovals = recommendations.filter((r) => r.status === 'PENDING_APPROVAL').length
@@ -51,18 +54,18 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
   const navSections: { title: string; items: NavItemConfig[] }[] = [
     {
-      title: 'AI OPERATIONS CORE',
+      title: 'AI CORE',
       items: [
         {
           id: 'ai-operations',
-          label: 'AI Operations Center',
+          label: 'AI Operations',
           icon: Sparkles,
           badge: pendingApprovals > 0 ? pendingApprovals : undefined,
           badgeVariant: 'red',
         },
         {
           id: 'overview',
-          label: 'Amazon US Overview',
+          label: 'Tổng quan Amazon',
           icon: LayoutDashboard,
         },
         {
@@ -73,7 +76,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ],
     },
     {
-      title: 'OPERATIONS WORKSPACE',
+      title: 'OPERATIONS',
       items: [
         {
           id: 'products',
@@ -82,31 +85,31 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         },
         {
           id: 'listings',
-          label: 'Tối ưu Listing AI',
+          label: 'Tối ưu Listing',
           icon: Package,
         },
         {
           id: 'inventory',
-          label: 'Tồn kho & FBA Forecast',
+          label: 'Tồn kho FBA',
           icon: Boxes,
           badge: 'Cần nhập',
           badgeVariant: 'amber',
         },
         {
           id: 'orders',
-          label: 'Đơn hàng & Vận chuyển',
+          label: 'Đơn hàng & FBA',
           icon: PackageCheck,
         },
         {
           id: 'customers',
-          label: 'CS & Hỗ trợ Khách hàng',
+          label: 'Chăm sóc Khách hàng',
           icon: MessageSquareWarning,
           badge: criticalSafetyMessages > 0 ? 'Khẩn' : undefined,
           badgeVariant: 'red',
         },
         {
           id: 'ppc',
-          label: 'Quảng cáo Amazon PPC',
+          label: 'Quảng cáo PPC',
           icon: Megaphone,
         },
         {
@@ -124,34 +127,34 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       ],
     },
     {
-      title: 'GOVERNANCE & REPORTING',
+      title: 'GOVERNANCE',
       items: [
         {
           id: 'tasks',
-          label: 'Quản lý Task Vận hành',
+          label: 'Task Vận hành',
           icon: CheckSquare,
           badge: openTasksCount > 0 ? openTasksCount : undefined,
           badgeVariant: 'blue',
         },
         {
           id: 'reports',
-          label: 'Báo cáo & AI Summary',
+          label: 'Báo cáo Hiệu suất',
           icon: FileText,
         },
         {
           id: 'sync-center',
-          label: 'Amazon SP-API Connector',
+          label: 'SP-API Connector',
           icon: RefreshCw,
         },
         {
           id: 'vexim-kpis',
-          label: 'Hiệu suất Vexim & AI KPI',
+          label: 'Hiệu suất Vexim',
           icon: Activity,
           rolesAllowed: ['SUPER_ADMIN', 'OPS_MANAGER', 'ACCOUNT_EXECUTIVE'],
         },
         {
           id: 'audit-log',
-          label: 'Nhật ký Thao tác (Audit)',
+          label: 'Nhật ký Kiểm toán',
           icon: History,
           rolesAllowed: ['SUPER_ADMIN', 'OPS_MANAGER', 'COMPLIANCE_SPECIALIST'],
         },
@@ -178,54 +181,75 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs lg:hidden"
           onClick={onClose}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 flex w-64 flex-col border-r border-border bg-white transition-transform duration-200 ease-in-out lg:static lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white transition-all duration-200 ease-in-out lg:static shrink-0 ${
+          isCollapsed ? 'w-[76px]' : 'w-[268px]'
+        } ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
         {/* Brand Header */}
-        <div className="flex h-16 items-center justify-between border-b border-border px-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-blue-900 to-blue-700 text-base font-extrabold text-white shadow-md shadow-blue-900/10">
+        <div className="flex h-16 items-center justify-between border-b border-slate-200 px-4">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-slate-900 via-blue-900 to-blue-700 text-base font-extrabold text-white shadow-md shadow-blue-900/10">
               V
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-sm font-black tracking-wider text-slate-900">VEXIM</span>
-                <span className="rounded bg-blue-100 px-1.5 py-0.2 text-[9px] font-mono font-bold text-blue-700">
-                  US V1
-                </span>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-black tracking-wider text-slate-900">VEXIM</span>
+                  <span className="rounded bg-blue-100 px-1.5 py-0.2 text-[9px] font-mono font-bold text-blue-700">
+                    US V1
+                  </span>
+                </div>
+                <div className="text-[10px] font-mono tracking-wider text-slate-400 truncate">
+                  AMAZON OPERATIONS
+                </div>
               </div>
-              <div className="text-[10px] font-mono tracking-wider text-slate-400">AMAZON OPERATIONS</div>
-            </div>
+            )}
           </div>
 
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-1">
+            {/* Desktop Collapse Toggle */}
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+              title={isCollapsed ? 'Mở rộng sidebar' : 'Thu gọn sidebar'}
+            >
+              {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+
+            {/* Mobile Close Button */}
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 lg:hidden"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Marketplace Pill */}
-        <div className="mx-3 my-3 flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs">
-          <div className="flex items-center gap-2 text-slate-700 font-medium">
-            <Globe2 size={14} className="text-blue-600" />
-            <span>Target: Amazon.com (US)</span>
+        {!isCollapsed ? (
+          <div className="mx-3 my-2.5 flex items-center justify-between rounded-lg border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs">
+            <div className="flex items-center gap-2 text-slate-700 font-medium truncate">
+              <Globe2 size={14} className="text-blue-600 shrink-0" />
+              <span className="truncate">Amazon US (Live SP-API)</span>
+            </div>
+            <span className="flex h-2 w-2 shrink-0 rounded-full bg-emerald-500" title="Connected to SP-API" />
           </div>
-          <span className="flex h-2 w-2 rounded-full bg-emerald-500" title="Connected to SP-API" />
-        </div>
+        ) : (
+          <div className="mx-auto my-2 flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-blue-600">
+            <Globe2 size={16} />
+          </div>
+        )}
 
         {/* Navigation List */}
-        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+        <div className="flex-1 overflow-y-auto px-3 py-2 space-y-4">
           {navSections.map((section) => {
-            // Filter by role permissions if specified
             const visibleItems = section.items.filter(
               (item) => !item.rolesAllowed || item.rolesAllowed.includes(currentRole)
             )
@@ -233,9 +257,11 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
 
             return (
               <div key={section.title}>
-                <div className="px-3 pb-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                  {section.title}
-                </div>
+                {!isCollapsed && (
+                  <div className="px-3 pb-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                    {section.title}
+                  </div>
+                )}
                 <div className="space-y-0.5">
                   {visibleItems.map((item) => {
                     const Icon = item.icon
@@ -248,23 +274,28 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                           setActiveTab(item.id)
                           if (window.innerWidth < 1024) onClose()
                         }}
-                        className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium transition-all ${
+                        title={isCollapsed ? item.label : undefined}
+                        className={`group flex w-full items-center rounded-lg text-xs font-medium transition-all ${
+                          isCollapsed ? 'justify-center p-2.5' : 'justify-between px-3 py-2'
+                        } ${
                           isActive
-                            ? 'bg-blue-600 text-white font-semibold shadow-sm shadow-blue-600/20'
-                            : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900'
+                            ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                            : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <Icon
                             size={16}
-                            className={isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}
+                            className={`shrink-0 ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-600'}`}
                           />
-                          <span>{item.label}</span>
+                          {!isCollapsed && (
+                            <span className="truncate whitespace-nowrap text-left">{item.label}</span>
+                          )}
                         </div>
 
-                        {item.badge !== undefined && (
+                        {!isCollapsed && item.badge !== undefined && (
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] ${getBadgeStyle(
+                            className={`shrink-0 rounded-full px-2 py-0.2 text-[10px] ${getBadgeStyle(
                               item.badgeVariant
                             )}`}
                           >
@@ -281,14 +312,20 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         </div>
 
         {/* Footer Security Badge */}
-        <div className="border-t border-border p-3">
-          <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2.5 text-[11px] text-slate-600">
-            <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
-            <div>
-              <div className="font-semibold text-slate-800">Tenant Isolation & Audit</div>
-              <div className="text-[10px] text-slate-400">SOC2 & Amazon SP-API Compliant</div>
+        <div className="border-t border-slate-200 p-3">
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2 rounded-lg bg-slate-50 p-2 text-[11px] text-slate-600">
+              <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+              <div className="min-w-0 flex-1 truncate">
+                <div className="font-semibold text-slate-800 truncate">Tenant Isolation Active</div>
+                <div className="text-[10px] text-slate-400 truncate">SOC2 & SP-API Guard</div>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex justify-center p-1 text-emerald-600" title="Tenant Isolation Active">
+              <ShieldCheck size={18} />
+            </div>
+          )}
         </div>
       </aside>
     </>
