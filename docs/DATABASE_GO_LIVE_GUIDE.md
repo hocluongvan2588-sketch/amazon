@@ -1,71 +1,88 @@
-# HƯỚNG DẪN KÍCH HOẠT DATABASE THẬT (GO-LIVE) — VEXIM PLATFORM
+# RUNBOOK VẬN HÀNH PRODUCTION — VEXIM PLATFORM
 
-> Tài liệu này đi kèm migration `supabase/migrations/20260910_rls_fix_and_seed.sql`.
-> Thực hiện đúng 2 bước dưới đây, toàn bộ Supply Chain Hub (tồn kho, giá cước 4 hãng tàu,
-> booking B/L) sẽ chuyển từ dữ liệu demo sang dữ liệu thật trong Supabase.
+> Mục tiêu: hệ thống **vận hành được** với Supabase, biết chính xác phần nào
+> đang chạy THẬT / phần nào đang FALLBACK, và checklist chốt trước khi mở thật.
 
 ---
 
-## BƯỚC 1 — Chạy migration SQL trong Supabase (bắt buộc, ~1 phút)
+## 1. Hai file SQL — chạy đúng thứ tự
 
-1. Mở **Supabase Dashboard** → project `yegsmfnxpqgjjohqsscx`.
-2. Vào **SQL Editor** → **New query**.
-3. Mở file `supabase/migrations/20260910_rls_fix_and_seed.sql`, **copy toàn bộ** → paste → **Run**.
-4. Kiểm tra nhanh (chạy trong cùng SQL Editor):
+| File | Bắt buộc? | Tác dụng | Rủi ro fail |
+|---|---|---|---|
+| `supabase/migrations/20260910_rls_fix.sql` | ✅ BẮT BUỘC | Sửa bug RLS 42P17 bảng `users`; mở quyền đọc/ghi cho app. Không có file này = app không bao giờ thấy dữ liệu DB. | Không thể fail (toàn bộ IF EXISTS + guard) |
+| `supabase/migrations/20260910_seed_demo_data.sql` | 🔶 Tuỳ chọn | Dữ liệu nền: 2 NCC, 9 users, 3 products, 3 tồn kho, 4 hãng tàu, 1 vận đơn mẫu, biểu thuế | Không thể fail hard — lỗi section nào chỉ ra NOTICE `[Vexim Seed N] Bo qua: ...` rồi chạy tiếp |
 
-```sql
-SELECT count(*) FROM public.users;        -- kỳ vọng: 9
-SELECT count(*) FROM public.products;     -- kỳ vọng: 3
-SELECT count(*) FROM public.inventory;    -- kỳ vọng: 3
-SELECT carrier_partner_name FROM public.freight_rate_cards;   -- kỳ vọng: 4 hãng tàu
-SELECT shipment_code, bill_of_lading_number FROM public.inbound_shipments;  -- VXM-SHP-2026-001 / KRY-VNM-LAX-8801
+Cách chạy: Supabase Dashboard → SQL Editor → New query → paste → Run.
+
+> Thiết kế mới của seed: **không dùng ON CONFLICT phụ thuộc constraint**,
+> thay bằng `WHERE NOT EXISTS`; manifest carton chỉ insert khi shipment + product
+> đều tồn tại (JOIN qua products) → **không thể** dính lỗi 23503/42P10 như trước.
+> Nếu DB live đã có sẵn products với ID khác → seed tự bỏ qua, không sao cả.
+
+## 2. Thẩm định hệ thống đang chạy gì — 1 lệnh
+
+Sau khi chạy SQL, mở:
+
+```
+GET /api/system/health
 ```
 
-Migration này **idempotent** (chạy lại nhiều lần không gây trùng lặp) và đã sửa:
+```jsonc
+{
+  "mode": "DATABASE_LIVE",        // ✅ hoặc DEGRADED / FALLBACK_MOCK
+  "supabase": { "reachable": true, "rlsFixed": true },
+  "tables": { "users": 9, "inventory": 3, "freight_rate_cards": 4, ... },
+  "integrations": { "aiGatewayKey": false, "logisticsWebhookSecret": false }
+}
+```
 
-- **Bug RLS 42P17** "infinite recursion detected in policy" trên bảng `users`
-  (policy cũ tự query chính bảng `users` trong mệnh đề `EXISTS`).
-- **Chính sách chặn đọc** của anonymous key (app Vexim đăng nhập ở tầng ứng dụng,
-  không dùng Supabase Auth, nên policy `auth.jwt()` cũ chặn toàn bộ dữ liệu).
-- ⚠️ **Lưu ý bảo mật:** policy mới `vexim_demo_full_access` cho phép anon đọc/ghi —
-  phù hợp chế độ DEMO NỘI BỘ. Trước khi lên production, thay bằng policy
-  multi-tenant theo `auth.jwt()` như trong `supabase/schema.sql` mục 12.
+- `DATABASE_LIVE` — Supply Chain Hub đọc tồn kho + giá cước từ DB; booking B/L ghi DB.
+- `DEGRADED` — DB kết nối OK nhưng chưa seed → app dùng mock nền, không crash.
+- `FALLBACK_MOCK` — DB chưa chạy RLS fix / không cấu hình → app dùng mock, không crash.
 
-## BƯỚC 2 — Sau khi chạy SQL xong, kiểm chứng trên app
-
-1. Mở Supply Chain Hub → **Inventory**:
-   - SKU, tồn kho, days-of-supply giờ lấy từ bảng `inventory` (không còn từ `mock-data.ts`).
-   - Bảng giá cước (tab Landed Cost & Book tàu) lấy từ bảng `freight_rate_cards`.
-2. Bấm **Xác nhận Book Tàu** trên một SKU:
-   - Hệ thống sinh mã vận đơn `VXM-SHP-YYYY-XXXX` và **ghi vào bảng `inbound_shipments`**
-     (kiểm tra lại bằng SQL: `SELECT * FROM inbound_shipments ORDER BY created_at DESC;`).
-3. Webhook forwarder: `POST /api/webhooks/logistics` giờ **lưu event thật** vào bảng
-   `forwarder_tracking_events` (response có `"persisted": true`).
-
-## BƯỚC 3 — Kích hoạt AI Copilot thật (tuỳ chọn)
-
-Copilot (`/api/chat`) hiện chạy kịch bản fallback khi thiếu key. Để gọi AI thật:
-
-1. Tạo API key tại **Vercel AI Gateway** (hoặc dùng `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`).
-2. Tạo file `.env.local` tại thư mục gốc repo:
+## 3. Cấu hình môi trường (`.env.local`)
 
 ```bash
-AI_GATEWAY_API_KEY=vck_your_key_here
-# (tuỳ chọn) LOGISTICS_WEBHOOK_SECRET=secret_do_forwarder_dung
+# Supabase (đã hardcode giá trị demo trong lib/supabase.ts — production nên set riêng)
+NEXT_PUBLIC_SUPABASE_URL=https://<project>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+
+# AI Copilot thật (không có = chat trả kịch bản mẫu, không lỗi)
+AI_GATEWAY_API_KEY=<key>
+
+# Webhook forwarder (production NÊN đổi khỏi giá trị mặc định)
+LOGISTICS_WEBHOOK_SECRET=<chuỗi ngẫu nhiên mạnh>
 ```
 
-3. Restart dev server. Từ giờ Copilot trả lời bằng model thật, và **tự đọc bối cảnh sống**
-   (tồn kho, hãng tàu, giá cước) từ Supabase để đưa vào prompt.
+## 4. Trạng thái thật của từng thành phần (sau go-live)
 
-## Kiến trúc dữ liệu sau khi go-live
+| Thành phần | Trạng thái hiện tại | Việc còn lại để "thật" 100% |
+|---|---|---|
+| Tồn kho / Sản phẩm / Clients / Users | ✅ Đọc ghi Supabase thật | Tự duy trì qua app |
+| Bảng giá cước 4 hãng tàu | ✅ Đọc từ `freight_rate_cards` | Sửa giá trực tiếp trong DB |
+| Book tàu B/L | ✅ Ghi thật vào `inbound_shipments` | — |
+| Webhook tracking | ✅ Lưu thật vào `forwarder_tracking_events` | Cho forwarder gọi kèm header secret |
+| AI Copilot | ✅ Route thật; tự nạp context sống từ DB | Thêm `AI_GATEWAY_API_KEY` |
+| **Amazon SP-API** (`lib/amazon-sp-api.ts`) | ⚠️ **Vẫn là simulator** (setTimeout + số cứng) | Cần Amazon Developer App (LWA) + credentials thật + viết OAuth/refresh flow — làm theo giai đoạn riêng |
+| Đơn hàng / PPC / Reports trong DB | ⚠️ Schema có, seed chưa phủ, app chưa hydrate các bảng này | Giai đoạn 2: mở rộng hydration như đã làm với inventory |
 
-```
-UI ──đọc/ghi──> Supabase (25 bảng, RLS demo-mode)
- │                ├─ inventory              ← nguồn sự thật tồn kho FBA
- │                ├─ freight_rate_cards     ← bảng giá 4 hãng tàu (sửa giá tại DB)
- │                ├─ inbound_shipments      ← booking B/L được ghi từ app
- │                └─ forwarder_tracking_events ← webhook từ Kerry/Flexport/Maersk/Unifa
- └─ localStorage chỉ còn vai trò cache hiển thị tạm thời
-```
+## 5. Checklist chốt production
 
-Khi **không** chạy migration: app tự fallback về mock-data (không lỗi trắng màn).
+1. ✅ Đã chạy `20260910_rls_fix.sql` (`/api/system/health` → `rlsFixed: true`).
+2. ✅ `.env.local` đủ 4 nhóm biến trên, **không** commit `.env.local` vào Git.
+3. 🔒 **Thay policy demo** `vexim_demo_full_access` bằng tenant-isolation khi mở cho người ngoài:
+
+   ```sql
+   -- Ví dụ cho products (làm tương tự các bảng theo tenant):
+   DROP POLICY IF EXISTS vexim_demo_full_access ON public.products;
+   CREATE POLICY tenant_read_products ON public.products FOR SELECT TO authenticated
+     USING (
+       (auth.jwt()->>'role') IN ('SUPER_ADMIN','OPS_MANAGER','ACCOUNT_EXECUTIVE','COMPLIANCE_SPECIALIST')
+       OR client_id::text = (auth.jwt()->>'client_id')
+     );
+   ```
+
+4. 🔒 Đổi mật khẩu 9 tài khoản seed (mặc định `Anthai@88` từ migration 20260908).
+5. 🔒 Đổi `LOGISTICS_WEBHOOK_SECRET` khỏi giá trị mặc định `vexim_logistics_live_2026`.
+6. 📦 Bật PITR/backup trong Supabase trước khi nhập dữ liệu khách thật.
+7. 🧪 Định kỳ mở `/api/system/health` để xác nhận `mode: DATABASE_LIVE`.
