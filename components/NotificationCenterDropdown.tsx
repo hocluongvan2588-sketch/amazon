@@ -44,21 +44,42 @@ export function NotificationCenterDropdown() {
 
   const dropdownRef = useOutsideClick<HTMLDivElement>(() => setIsOpen(false), isOpen)
 
-  // Determine if a notification is relevant to the active user's role
+  const isClient = currentRole === 'CLIENT_SUPPLIER'
+
+  // Determine if a notification is relevant to the active user's role & multi-tenant client boundary
   const isRelevantToRole = (notif: AppNotification, role: UserRole): boolean => {
-    if (role === 'SUPER_ADMIN' || role === 'OPS_MANAGER') return true
+    // 1. Role match
     const roles = notif.targetRoles as (UserRole | 'ALL')[]
-    if (roles.includes('ALL')) return true
-    return roles.includes(role)
+    const roleMatches =
+      role === 'SUPER_ADMIN' ||
+      role === 'OPS_MANAGER' ||
+      roles.includes('ALL') ||
+      roles.includes(role)
+
+    if (!roleMatches) return false
+
+    // 2. Strict Client Supplier Isolation:
+    // A Vietnamese Factory Owner must ONLY see notifications for their own brand/clientId!
+    if (role === 'CLIENT_SUPPLIER') {
+      const assignedIds = currentUser.assignedClientIds || []
+      if (assignedIds.length > 0 && !assignedIds.includes('ALL')) {
+        if (notif.clientId && !assignedIds.includes(notif.clientId)) {
+          return false
+        }
+      }
+    }
+
+    return true
   }
 
-  // Filtered notifications based on user role and active filters
+  // Filtered notifications based on user role and tenant client boundary
   const roleNotifications = useMemo(() => {
     return notifications.filter((n) => isRelevantToRole(n, currentRole))
-  }, [notifications, currentRole])
+  }, [notifications, currentRole, currentUser])
 
   const displayedNotifications = useMemo(() => {
-    let list = scopeFilter === 'MY_ROLE' ? roleNotifications : notifications
+    // Client suppliers only see their role-specific notifications (no cross-agency leak)
+    let list = isClient || scopeFilter === 'MY_ROLE' ? roleNotifications : notifications
 
     if (categoryFilter !== 'ALL') {
       list = list.filter((n) => {
@@ -72,22 +93,30 @@ export function NotificationCenterDropdown() {
     }
 
     return list
-  }, [scopeFilter, roleNotifications, notifications, categoryFilter])
+  }, [scopeFilter, roleNotifications, notifications, categoryFilter, isClient])
 
   // Unread counts
   const unreadRoleCount = useMemo(() => {
     return roleNotifications.filter((n) => !n.isRead).length
   }, [roleNotifications])
 
-  const unreadTotalCount = useMemo(() => {
-    return notifications.filter((n) => !n.isRead).length
-  }, [notifications])
-
   const handleItemClick = (notif: AppNotification) => {
     markNotificationAsRead(notif.id)
-    if (notif.targetTab) {
+
+    // Intelligently route based on role:
+    // If user is a Client Supplier, navigate to their Supplier Dashboard / Inventory instead of internal AI tools
+    if (isClient) {
+      if (notif.type === 'LOW_STOCK' || notif.type === 'LOGISTICS') {
+        setActiveTab('inventory')
+      } else if (notif.type === 'FINANCE') {
+        setActiveTab('reports')
+      } else {
+        setActiveTab('supplier-portal')
+      }
+    } else if (notif.targetTab) {
       setActiveTab(notif.targetTab as ActiveNavTab)
     }
+
     setIsOpen(false)
   }
 
@@ -134,7 +163,7 @@ export function NotificationCenterDropdown() {
       case 'ACCOUNT_EXECUTIVE':
         return 'Account Executive'
       case 'CLIENT_SUPPLIER':
-        return 'Chủ Xưởng / Supplier'
+        return `Nhà Xưởng: ${currentUser.department || 'Supplier'}`
       default:
         return 'Vexim Team'
     }
@@ -146,7 +175,7 @@ export function NotificationCenterDropdown() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 transition-all shadow-xs"
-        title="Trung tâm Thông báo Đa Phòng ban Realtime"
+        title="Trung tâm Thông báo"
       >
         <Bell size={16} />
         {unreadRoleCount > 0 && (
@@ -168,11 +197,11 @@ export function NotificationCenterDropdown() {
                 </div>
                 <div>
                   <h3 className="text-xs font-bold text-white leading-tight">
-                    Trung Tâm Điều Phối Thông Báo
+                    {isClient ? 'Thông Báo Hoạt Động Doanh Nghiệp' : 'Trung Tâm Điều Phối Thông Báo'}
                   </h3>
                   <div className="flex items-center gap-1.5 text-[10px] text-slate-300">
                     <span className="font-medium text-cyan-300">
-                      Vai trò: {getRoleBadgeLabel(currentRole)}
+                      {getRoleBadgeLabel(currentRole)}
                     </span>
                     <span>•</span>
                     <span className="font-mono text-emerald-400 font-bold">
@@ -184,7 +213,7 @@ export function NotificationCenterDropdown() {
 
               {unreadRoleCount > 0 && (
                 <button
-                  onClick={() => markAllNotificationsAsRead(scopeFilter === 'MY_ROLE' ? currentRole : undefined)}
+                  onClick={() => markAllNotificationsAsRead(currentRole)}
                   className="flex items-center gap-1 rounded-lg bg-white/10 px-2 py-1 text-[10px] font-medium text-slate-300 hover:bg-white/20 hover:text-white transition-colors"
                   title="Đánh dấu tất cả thông báo là đã đọc"
                 >
@@ -194,31 +223,33 @@ export function NotificationCenterDropdown() {
               )}
             </div>
 
-            {/* Scope Switcher Tabs */}
-            <div className="mt-3 flex items-center gap-1 rounded-xl bg-white/10 p-1 text-[11px]">
-              <button
-                type="button"
-                onClick={() => setScopeFilter('MY_ROLE')}
-                className={`flex-1 rounded-lg py-1 px-2 font-semibold transition-all ${
-                  scopeFilter === 'MY_ROLE'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Phòng ban của tôi ({roleNotifications.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setScopeFilter('ALL_SYSTEM')}
-                className={`flex-1 rounded-lg py-1 px-2 font-semibold transition-all ${
-                  scopeFilter === 'ALL_SYSTEM'
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                Toàn hệ thống ({notifications.length})
-              </button>
-            </div>
+            {/* Scope Switcher: ONLY for Super Admin / Ops Manager. Suppliers only see their own brand alerts. */}
+            {!isClient && (
+              <div className="mt-3 flex items-center gap-1 rounded-xl bg-white/10 p-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setScopeFilter('MY_ROLE')}
+                  className={`flex-1 rounded-lg py-1 px-2 font-semibold transition-all ${
+                    scopeFilter === 'MY_ROLE'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Phòng ban của tôi ({roleNotifications.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScopeFilter('ALL_SYSTEM')}
+                  className={`flex-1 rounded-lg py-1 px-2 font-semibold transition-all ${
+                    scopeFilter === 'ALL_SYSTEM'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-300 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  Toàn bộ Agency ({notifications.length})
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Category Filter Pills */}
@@ -231,27 +262,7 @@ export function NotificationCenterDropdown() {
                   : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
               }`}
             >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setCategoryFilter('CRITICAL')}
-              className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
-                categoryFilter === 'CRITICAL'
-                  ? 'bg-rose-600 text-white font-bold'
-                  : 'bg-white border border-slate-200 text-rose-700 hover:bg-rose-50'
-              }`}
-            >
-              🚨 Khẩn cấp
-            </button>
-            <button
-              onClick={() => setCategoryFilter('PPC')}
-              className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
-                categoryFilter === 'PPC'
-                  ? 'bg-purple-600 text-white font-bold'
-                  : 'bg-white border border-slate-200 text-purple-700 hover:bg-purple-50'
-              }`}
-            >
-              ⚡ PPC & Growth
+              Tất cả ({displayedNotifications.length})
             </button>
             <button
               onClick={() => setCategoryFilter('SUPPLY')}
@@ -261,18 +272,32 @@ export function NotificationCenterDropdown() {
                   : 'bg-white border border-slate-200 text-cyan-700 hover:bg-cyan-50'
               }`}
             >
-              📦 Chuỗi Cung Ứng
+              📦 Tồn kho & Vận tải
             </button>
-            <button
-              onClick={() => setCategoryFilter('COMPLIANCE')}
-              className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
-                categoryFilter === 'COMPLIANCE'
-                  ? 'bg-red-600 text-white font-bold'
-                  : 'bg-white border border-slate-200 text-red-700 hover:bg-red-50'
-              }`}
-            >
-              ⚖️ Pháp lý & FDA
-            </button>
+            {!isClient && (
+              <>
+                <button
+                  onClick={() => setCategoryFilter('CRITICAL')}
+                  className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
+                    categoryFilter === 'CRITICAL'
+                      ? 'bg-rose-600 text-white font-bold'
+                      : 'bg-white border border-slate-200 text-rose-700 hover:bg-rose-50'
+                  }`}
+                >
+                  🚨 Khẩn cấp
+                </button>
+                <button
+                  onClick={() => setCategoryFilter('PPC')}
+                  className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
+                    categoryFilter === 'PPC'
+                      ? 'bg-purple-600 text-white font-bold'
+                      : 'bg-white border border-slate-200 text-purple-700 hover:bg-purple-50'
+                  }`}
+                >
+                  ⚡ PPC
+                </button>
+              </>
+            )}
             <button
               onClick={() => setCategoryFilter('APPROVAL')}
               className={`rounded-lg px-2 py-0.5 font-medium transition-colors whitespace-nowrap ${
@@ -281,7 +306,7 @@ export function NotificationCenterDropdown() {
                   : 'bg-white border border-slate-200 text-emerald-700 hover:bg-emerald-50'
               }`}
             >
-              ✨ Phê duyệt & Task
+              ✨ Tiến độ & P&L
             </button>
           </div>
 
@@ -290,8 +315,12 @@ export function NotificationCenterDropdown() {
             {displayedNotifications.length === 0 ? (
               <div className="py-10 text-center text-xs text-slate-400 space-y-1">
                 <Bell size={24} className="mx-auto text-slate-300 mb-1" />
-                <p className="font-semibold text-slate-600">Không có thông báo nào trong danh mục này</p>
-                <p className="text-[11px] text-slate-400">Các hành động vận hành mới sẽ xuất hiện tại đây.</p>
+                <p className="font-semibold text-slate-600">Không có thông báo mới</p>
+                <p className="text-[11px] text-slate-400">
+                  {isClient
+                    ? 'Các cập nhật đơn hàng, xuất nhập kho và báo cáo P&L sẽ xuất hiện tại đây.'
+                    : 'Các hành động vận hành mới sẽ xuất hiện tại đây.'}
+                </p>
               </div>
             ) : (
               displayedNotifications.map((notif) => {
@@ -338,11 +367,11 @@ export function NotificationCenterDropdown() {
                               {notif.clientName}
                             </span>
                           )}
-                          {notif.actionBy && (
-                            <span className="text-slate-500 font-sans hidden sm:inline">
-                              by {notif.actionBy.name.split(' ')[0]}
-                            </span>
-                          )}
+                          <span className="text-indigo-600 font-semibold font-sans">
+                            {isClient
+                              ? (notif.type === 'LOW_STOCK' ? '👉 Bấm xem Tồn Kho' : '👉 Bấm xem Chi Tiết')
+                              : '👉 Mở phân hệ'}
+                          </span>
                         </div>
                         <span className="text-slate-400">{notif.timestamp}</span>
                       </div>
@@ -366,11 +395,14 @@ export function NotificationCenterDropdown() {
             )}
           </div>
 
-          {/* Footer with Event Dispatcher Status */}
+          {/* Footer */}
           <div className="border-t border-slate-100 bg-slate-50 p-2.5 px-3 flex items-center justify-between text-[10px] text-slate-500">
             <span className="flex items-center gap-1.5">
-              <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>Event Dispatcher: <strong>Real-time Role Routing Active</strong></span>
+              <span className="flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span>
+                {isClient ? 'Cổng kết nối Doanh nghiệp' : 'Event Dispatcher'}:{' '}
+                <strong>{isClient ? 'Bảo mật đa nhà cung cấp' : 'Role-Based Routing Active'}</strong>
+              </span>
             </span>
             <span className="text-slate-400 font-mono">Vexim Amazon OS</span>
           </div>
