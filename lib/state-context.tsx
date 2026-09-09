@@ -195,6 +195,8 @@ interface AppStateContextType {
   addProduct: (product: Partial<Product>) => void
   addProductDocument: (productId: string, doc: ProductDocument) => void
   rescoreListing: (listingId: string) => void
+  saveListingEdits: (listing: ListingData) => Promise<ListingData>
+  pushListingToAmazon: (listing: ListingData, imageUrl?: string) => Promise<{ ok: boolean; json: any }>
   createCampaign: (campaign: Partial<PpcCampaign>) => void
   toggleCampaignStatus: (campaignId: string) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
@@ -376,13 +378,14 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     async function loadLiveSupabaseData() {
       try {
-        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards, liveOrders] = await Promise.all([
+        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards, liveOrders, liveListings] = await Promise.all([
           SupabaseDatabaseService.getUsers(),
           SupabaseDatabaseService.getClients(),
           SupabaseDatabaseService.getProducts(),
           SupabaseDatabaseService.getInventory(),
           SupabaseDatabaseService.getFreightRateCards(),
           SupabaseDatabaseService.getOrders(),
+          SupabaseDatabaseService.getListings(),
         ])
 
         if (!isMounted) return
@@ -415,6 +418,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           // Đơn hàng: DB là nguồn sự thật (được sync từ Amazon SP-API)
           setOrders(liveOrders)
           saveToStorage('vexim_orders', liveOrders)
+        }
+        if (liveListings && liveListings.length > 0) {
+          // GĐ4: listings sống trong DB — nội dung Editor/Seller Central không còn phụ thuộc máy này
+          setListings(liveListings)
+          saveToStorage('vexim_listings', liveListings)
         }
       } catch (err) {
         console.info('[Vexim State] Running in persistent hybrid mode.')
@@ -1039,6 +1047,75 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
+  // GĐ4: Lưu nội dung từ Listing Editor — chấm lại bằng engine, ghi DB (upsert) + state
+  const saveListingEdits = async (listing: ListingData) => {
+    const res = scoreListing({
+      listingId: listing.id,
+      sku: listing.sku,
+      asin: listing.asin,
+      title: listing.title,
+      bulletPoints: listing.bulletPoints,
+      description: listing.description,
+      backendSearchTerms: listing.backendSearchTerms,
+      hasAplus: Boolean(listing.aplusContentHtml),
+    })
+    const updated: ListingData = {
+      ...listing,
+      currentScore: toListingScorecard(res),
+      lastOptimizedAt: new Date().toISOString().slice(0, 10),
+    }
+    setListings((prev) => prev.map((l) => (l.id === updated.id ? updated : l)))
+    const saved = await SupabaseDatabaseService.upsertListing(updated, selectedClientId || 'client-vina-01')
+    showToast(
+      saved
+        ? `Đã lưu "${updated.sku}" vào Supabase DB — điểm engine: ${updated.currentScore.overall}/100 (${updated.currentScore.conversionPotential}).`
+        : `Đã lưu cục bộ (Supabase chưa cấu hình/migration 20260914 chưa chạy) — điểm engine: ${updated.currentScore.overall}/100.`,
+      saved ? 'success' : 'info'
+    )
+    return updated
+  }
+
+  // GĐ4: Đẩy PATCH Listings lên Seller Central qua /api/amazon/listing/push (LIVE/SIMULATED trung thực)
+  const pushListingToAmazon = async (listing: ListingData, imageUrl?: string) => {
+    try {
+      const res = await fetch('/api/amazon/listing/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku: listing.sku,
+          title: listing.title,
+          bulletPoints: listing.bulletPoints,
+          description: listing.description,
+          genericKeywords: listing.backendSearchTerms,
+          imageUrl,
+          price: listing.price,
+        }),
+      })
+      const json = await res.json()
+      const result = json?.result
+      if (!res.ok || !result?.success) {
+        const msg = result?.issues?.map((i: any) => i.message).join(' | ') || `HTTP ${res.status}`
+        showToast(`PATCH thất bại: ${msg}`, 'error')
+        return { ok: false as const, json }
+      }
+      if (result.mode === 'SIMULATED') {
+        showToast(
+          'Chế độ MÔ PHỎNG: payload PATCH hợp lệ nhưng chưa gửi đi — cần credentials SP-API (AMAZON_SP_API_*).',
+          'info'
+        )
+      } else {
+        showToast(
+          `Đã gửi PATCH tới Amazon (submission ${result.submissionId || result.status}) — kiểm tra issues nếu có.`,
+          'success'
+        )
+      }
+      return { ok: true as const, json }
+    } catch (err: any) {
+      showToast(`Lỗi kết nối push API: ${String(err?.message || err).slice(0, 150)}`, 'error')
+      return { ok: false as const, json: null }
+    }
+  }
+
   // Sprint audit: nút "chấm lại" chạy engine thật (trước đây là setTimeout 1s giả "AI đang phân tích")
   const rescoreListing = (listingId: string) => {
     let overall = 0
@@ -1661,6 +1738,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         addProduct,
         addProductDocument,
         rescoreListing,
+        saveListingEdits,
+        pushListingToAmazon,
         createCampaign,
         toggleCampaignStatus,
         connectAmazonAccount,

@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 
 import { utf8ByteLength } from '@/lib/listing-quality'
 import { ListingIntelligencePanel } from './ListingIntelligencePanel'
 import { useAppState } from '@/lib/state-context'
 import { ListingData } from '@/lib/types'
+import { SupabaseDatabaseService } from '@/lib/supabase-service'
+import { useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   ArrowRight,
@@ -35,9 +37,90 @@ function backendSearchTermsBytes(text: string): number {
 }
 
 export function ListingManagement() {
-  const { filteredListings, applyListingDraft, rescoreListing } = useAppState()
+  const { filteredListings, applyListingDraft, rescoreListing, saveListingEdits, pushListingToAmazon, products, selectedClientId, showToast } = useAppState()
   const [selectedListing, setSelectedListing] = useState<ListingData>(filteredListings[0] || null)
-  const [activeTab, setActiveTab] = useState<'SIDE_BY_SIDE' | 'SCORECARD' | 'APLUS_CONTENT'>('SIDE_BY_SIDE')
+  const [activeTab, setActiveTab] = useState<'SIDE_BY_SIDE' | 'SCORECARD' | 'APLUS_CONTENT' | 'EDITOR'>('SIDE_BY_SIDE')
+
+  // ================= GIAI ĐOẠN 4: LISTING EDITOR =================
+  // Soạn thảo THẬT: title/bullets/description/backend keywords/A+ modules;
+  // ảnh upload Supabase Storage; lưu DB (amazon_listings); đẩy PATCH lên Seller Central.
+  const [editorTitle, setEditorTitle] = useState('')
+  const [editorBullets, setEditorBullets] = useState<string[]>([])
+  const [editorDescription, setEditorDescription] = useState('')
+  const [editorKeywords, setEditorKeywords] = useState('')
+  const [editorPrice, setEditorPrice] = useState('0')
+  const [editorImages, setEditorImages] = useState<string[]>([])
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [pushing, setPushing] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const editorLoadedForRef = useRef<string | null>(null)
+
+  // Nạp nội dung listing đang chọn vào editor (mỗi listing chỉ nạp 1 lần)
+  useEffect(() => {
+    if (!selectedListing || editorLoadedForRef.current === selectedListing.id) return
+    editorLoadedForRef.current = selectedListing.id
+    setEditorTitle(selectedListing.title || '')
+    setEditorBullets(selectedListing.bulletPoints?.length ? [...selectedListing.bulletPoints] : [''])
+    setEditorDescription(selectedListing.description || '')
+    setEditorKeywords(selectedListing.backendSearchTerms || '')
+    setEditorPrice(String(selectedListing.price || 0))
+    const prod = products.find((pr) => pr.id === selectedListing.productId || pr.sku === selectedListing.sku)
+    setEditorImages(
+      prod
+        ? [prod.mainImage, ...(prod.galleryImages || [])].filter(Boolean)
+        : []
+    )
+  }, [selectedListing, products])
+
+  const editorBackendBytes = utf8ByteLength(editorKeywords)
+  const handleEditorUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedListing) return
+    setUploadingImage(true)
+    const res = await SupabaseDatabaseService.uploadListingImage(
+      selectedClientId || 'client-vina-01',
+      selectedListing.sku,
+      file
+    )
+    if (res) {
+      setEditorImages((prev) => [...prev, res.url])
+      showToast(`Đã upload ảnh lên Supabase Storage (${Math.round(file.size / 1024)} KB).`, 'success')
+    } else {
+      showToast('Upload thất bại — cần cấu hình Supabase và chạy migration 20260914 (bucket product-images).', 'error')
+    }
+    setUploadingImage(false)
+    e.target.value = ''
+  }
+  const handleEditorSave = async () => {
+    if (!selectedListing) return
+    setSaving(true)
+    await saveListingEdits({
+      ...selectedListing,
+      title: editorTitle,
+      bulletPoints: editorBullets.filter((b) => b.trim()),
+      description: editorDescription,
+      backendSearchTerms: editorKeywords,
+      price: Number(editorPrice) || selectedListing.price,
+    })
+    setSaving(false)
+  }
+  const handleEditorPush = async () => {
+    if (!selectedListing) return
+    setPushing(true)
+    await pushListingToAmazon(
+      {
+        ...selectedListing,
+        title: editorTitle,
+        bulletPoints: editorBullets.filter((b) => b.trim()),
+        description: editorDescription,
+        backendSearchTerms: editorKeywords,
+        price: Number(editorPrice) || selectedListing.price,
+      },
+      editorImages[0]
+    )
+    setPushing(false)
+  }
 
   return (
     <div className="space-y-6">
@@ -121,6 +204,7 @@ export function ListingManagement() {
                   { id: 'SIDE_BY_SIDE', label: 'So sánh Trước & Sau AI Draft' },
                   { id: 'SCORECARD', label: 'Chi tiết Điểm số & Đối thủ' },
                   { id: 'APLUS_CONTENT', label: 'A+ Brand Content Story' },
+                  { id: 'EDITOR', label: '✎ Editor & Đẩy lên Amazon' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -371,6 +455,190 @@ export function ListingManagement() {
               </div>
             </div>
           )}
+            {/* TAB 4: EDITOR & PUSH (GIAI ĐOẠN 4) */}
+            {activeTab === 'EDITOR' && (
+              <div className="space-y-4">
+                <div className="flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50/60 p-3 text-xs text-blue-900">
+                  <Zap size={15} className="mt-0.5 shrink-0 text-blue-600" />
+                  <div>
+                    <strong>Editor trực tiếp:</strong> sửa nội dung bên dưới → <em>Lưu &amp; chấm điểm</em> ghi vào
+                    bảng <code className="font-mono">amazon_listings</code> (Supabase) thay localStorage;{' '}
+                    <em>Đẩy PATCH</em> gửi JSON-PATCH thật tới SP-API Listings Items khi đã cấu hình credentials
+                    (thiếu credentials = MÔ PHỎNG, có báo rõ). Ảnh upload vào bucket <code className="font-mono">product-images</code>.
+                    <div className="mt-1 text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                      Lưu ý: A+ Content không đẩy qua PATCH này — Amazon yêu cầu A+ Content Publishing API riêng (lộ trình tiếp theo).
+                    </div>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="rounded-xl border border-border bg-white p-4 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900">Tiêu đề (Title)</span>
+                    <span className={`font-mono text-[11px] ${editorTitle.length > 200 ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                      {editorTitle.length}/200 ký tự (Amazon grocery khuyến nghị 80–200)
+                    </span>
+                  </div>
+                  <textarea
+                    value={editorTitle}
+                    onChange={(e) => setEditorTitle(e.target.value)}
+                    rows={2}
+                    className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+
+                {/* Bullets */}
+                <div className="rounded-xl border border-border bg-white p-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900">5 Bullet Points</span>
+                    <span className={`font-mono text-[11px] ${editorBullets.filter((b) => b.trim()).length > 5 ? 'text-red-600 font-bold' : 'text-slate-400'}`}>
+                      {editorBullets.filter((b) => b.trim()).length}/5 (Amazon tối đa 5)
+                    </span>
+                  </div>
+                  {editorBullets.map((b, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <span className="mt-2 font-mono text-[10px] text-slate-400 w-4 shrink-0">{i + 1}.</span>
+                      <textarea
+                        value={b}
+                        onChange={(e) => setEditorBullets((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
+                        rows={2}
+                        maxLength={500}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      />
+                      <button
+                        onClick={() => setEditorBullets((prev) => prev.filter((_, j) => j !== i))}
+                        className="mt-1 text-slate-300 hover:text-red-500"
+                        title="Xóa bullet"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setEditorBullets((prev) => [...prev, ''])}
+                    className="text-[11px] font-bold text-blue-600 hover:underline"
+                  >
+                    + Thêm bullet
+                  </button>
+                </div>
+
+                {/* Description */}
+                <div className="rounded-xl border border-border bg-white p-4 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900">Mô tả sản phẩm (Product Description)</span>
+                    <span className="font-mono text-[11px] text-slate-400">{editorDescription.length} ký tự</span>
+                  </div>
+                  <textarea
+                    value={editorDescription}
+                    onChange={(e) => setEditorDescription(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-lg border border-slate-200 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                  />
+                </div>
+
+                {/* Backend keywords + Price */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-border bg-white p-4 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900">Từ khóa Backend</span>
+                      <span className={`font-mono text-[11px] ${editorBackendBytes > 249 ? 'text-red-600 font-bold' : 'text-emerald-600'}`}>
+                        {editorBackendBytes}/249 bytes UTF-8
+                      </span>
+                    </div>
+                    <textarea
+                      value={editorKeywords}
+                      onChange={(e) => setEditorKeywords(e.target.value)}
+                      rows={3}
+                      className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    />
+                    <p className="text-[10px] text-slate-400">Hạn ngạch Amazon tính bằng BYTES — tiếng Việt có dấu tốn 2–3 bytes/ký tự.</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-white p-4 space-y-1.5">
+                    <span className="text-xs font-bold text-slate-900">Giá bán (USD)</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editorPrice}
+                      onChange={(e) => setEditorPrice(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 p-2.5 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                    />
+                    <p className="text-[10px] text-slate-400">Đẩy qua attribute purchasable_offer (marketplace US).</p>
+                  </div>
+                </div>
+
+                {/* Images */}
+                <div className="rounded-xl border border-border bg-white p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900">Ảnh Listing ({editorImages.length}) — ảnh 1 = MAIN cho PATCH</span>
+                    <button
+                      onClick={() => imageInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                    >
+                      {uploadingImage ? 'Đang upload...' : 'Upload ảnh (Supabase Storage)'}
+                    </button>
+                    <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleEditorUploadImage} />
+                  </div>
+                  {editorImages.length === 0 ? (
+                    <p className="py-4 text-center text-xs text-slate-400">Chưa có ảnh — upload JPEG/PNG/WebP ≤10MB.</p>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                      {editorImages.map((url, i) => (
+                        <div key={url + i} className="group relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`anh-${i + 1}`} className="h-16 w-full rounded-lg border border-slate-200 object-cover" />
+                          <span className="absolute left-1 top-1 rounded bg-slate-900/70 px-1 text-[9px] font-bold text-white">
+                            {i === 0 ? 'MAIN' : i + 1}
+                          </span>
+                          {i > 0 && (
+                            <button
+                              onClick={() => setEditorImages((prev) => prev.filter((_, j) => j !== i))}
+                              className="absolute right-0.5 top-0.5 hidden rounded bg-white/90 px-1 text-[10px] font-bold text-red-600 group-hover:block"
+                              title="Gỡ ảnh khỏi danh sách"
+                            >
+                              ×
+                            </button>
+                          )}
+                          {i > 0 && (
+                            <button
+                              onClick={() => setEditorImages((prev) => [prev[i], ...prev.filter((_, j) => j !== i)])}
+                              className="absolute bottom-0.5 left-0.5 hidden rounded bg-white/90 px-1 text-[9px] font-bold text-blue-700 group-hover:block"
+                              title="Đặt làm MAIN"
+                            >
+                              MAIN
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <button
+                    onClick={handleEditorSave}
+                    disabled={saving}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>{saving ? 'Đang lưu...' : 'Lưu & chấm điểm (DB)'}</span>
+                  </button>
+                  <button
+                    onClick={handleEditorPush}
+                    disabled={pushing}
+                    className="flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    <Upload size={14} />
+                    <span>{pushing ? 'Đang đẩy...' : 'Đẩy PATCH lên Seller Central'}</span>
+                  </button>
+                  <span className="text-[11px] text-slate-400">
+                    PATCH ghi đè title/bullets/description/keywords/ảnh/giá trên Amazon US (SKU {selectedListing?.sku}).
+                  </span>
+                </div>
+              </div>
+            )}
         </div>
       )}
     </div>

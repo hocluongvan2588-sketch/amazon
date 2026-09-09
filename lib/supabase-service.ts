@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { computeReadiness } from './readiness-engine'
+import { ListingData } from './types'
+import { scoreListing, toListingScorecard } from './listing-quality'
 import {
   AIRecommendation,
   AuditLogEntry,
@@ -505,6 +507,119 @@ export class SupabaseDatabaseService {
     } catch (err) {
       console.warn('[Supabase] insertTrackingEvent catch:', err)
       return false
+    }
+  }
+
+  // ==================== GIAI ĐOẠN 4: LISTING EDITOR + STORAGE ====================
+
+  /** Lấy listings từ DB — điểm hiện tại CHẤM LẠI bằng engine từ nội dung row
+   *  (không lưu điểm cứng; row không có điểm nào thì engine quyết định). */
+  static async getListings(clientId?: string): Promise<ListingData[] | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      let query = supabase.from('amazon_listings').select('*')
+      if (clientId && clientId !== 'ALL') query = query.eq('client_id', clientId)
+      const { data, error } = await query
+      if (error || !data || data.length === 0) return null
+      return data.map((row: any) => {
+        const base: ListingData = {
+          id: row.id,
+          productId: row.product_id || '',
+          sku: row.sku,
+          asin: row.asin || '',
+          title: row.title || '',
+          bulletPoints: row.bullet_points || [],
+          description: row.description || '',
+          backendSearchTerms: row.backend_search_terms || '',
+          aplusContentHtml: row.aplus_content_html || undefined,
+          aplusModules: row.aplus_modules || undefined,
+          price: Number(row.price || 0),
+          currency: row.currency || 'USD',
+          lastOptimizedAt: row.updated_at?.slice(0, 10),
+          currentScore: toListingScorecard(
+            scoreListing({
+              listingId: row.id,
+              sku: row.sku,
+              asin: row.asin || '',
+              title: row.title || '',
+              bulletPoints: row.bullet_points || [],
+              description: row.description || '',
+              backendSearchTerms: row.backend_search_terms || '',
+              hasAplus: Boolean(row.aplus_content_html),
+            })
+          ),
+        }
+        return base
+      })
+    } catch (err) {
+      console.warn('[Supabase] getListings error:', err)
+      return null
+    }
+  }
+
+  /** Lưu/ cập nhật listing từ Editor — upsert theo id, kèm scorecard engine. */
+  static async upsertListing(l: ListingData, clientId: string): Promise<boolean> {
+    if (!isSupabaseConfigured()) return false
+    try {
+      const { error } = await supabase.from('amazon_listings').upsert(
+        {
+          id: l.id,
+          client_id: clientId,
+          product_id: l.productId,
+          sku: l.sku,
+          asin: l.asin,
+          title: l.title,
+          bullet_points: l.bulletPoints,
+          description: l.description,
+          backend_search_terms: l.backendSearchTerms,
+          aplus_content_html: l.aplusContentHtml || null,
+          aplus_modules: l.aplusModules || [],
+          price: l.price,
+          currency: l.currency,
+          current_score: l.currentScore,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      )
+      if (error) console.warn('[Supabase] upsertListing:', error.message)
+      return !error
+    } catch (err) {
+      console.warn('[Supabase] upsertListing catch:', err)
+      return false
+    }
+  }
+
+  /** Upload ảnh lên Supabase Storage bucket product-images (public).
+   *  Path chuẩn: {clientId}/{sku}/{timestamp}-{filename} — trả về URL public. */
+  static async uploadListingImage(
+    clientId: string,
+    sku: string,
+    file: File
+  ): Promise<{ url: string; path: string } | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${clientId}/${sku}/${Date.now()}-${safeName}`
+      const { error } = await supabase.storage
+        .from('product-images')
+        .upload(path, file, { contentType: file.type, upsert: false })
+      if (error) {
+        console.warn('[Supabase] uploadListingImage:', error.message)
+        return null
+      }
+      const { data } = supabase.storage.from('product-images').getPublicUrl(path)
+      await supabase.from('listing_images').insert({
+        client_id: clientId,
+        sku,
+        storage_path: path,
+        url: data.publicUrl,
+        sort_order: 1,
+        file_size_bytes: file.size,
+      })
+      return { url: data.publicUrl, path }
+    } catch (err) {
+      console.warn('[Supabase] uploadListingImage catch:', err)
+      return null
     }
   }
 }
