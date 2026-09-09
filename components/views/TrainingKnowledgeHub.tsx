@@ -62,7 +62,18 @@ interface TrainingModule {
 
 export function TrainingKnowledgeHub() {
   const { setActiveTab, showToast } = useAppState()
-  const [selectedModuleId, setSelectedModuleId] = useState<string>('mod-01')
+  // Sprint audit: mở đúng Module theo không gian làm việc (trước đây luôn
+  // mở mod-01 dù sidebar quảng cáo Module 02/03/04 theo từng workspace)
+  const { workspaceMode } = useAppState()
+  const initialModuleId =
+    workspaceMode === 'BRAND_INTELLIGENCE'
+      ? 'mod-04'
+      : workspaceMode === 'PPC_GROWTH'
+        ? 'mod-02'
+        : workspaceMode === 'SUPPLY_CHAIN'
+          ? 'mod-03'
+          : 'mod-01'
+  const [selectedModuleId, setSelectedModuleId] = useState<string>(initialModuleId)
   const [searchQuery, setSearchQuery] = useState('')
   const [completedModules, setCompletedModules] = useState<Record<string, boolean>>({
     'mod-01': true,

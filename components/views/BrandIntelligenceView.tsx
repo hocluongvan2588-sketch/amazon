@@ -30,6 +30,8 @@ export function BrandIntelligenceView() {
   const [selectedCompId, setSelectedCompId] = useState<string>('comp-lindt-01')
 
   const activeComp = competitorReverseAsins.find((c) => c.id === selectedCompId) || competitorReverseAsins[0]
+  // Sprint audit: tiềm năng uplift tính TỪ dữ liệu diagnostics (trước đây hardcode +$7,460)
+  const totalUpliftMonthly = conversionDiagnostics.reduce((sum, d) => sum + (d.estimatedRevenueUpliftMonthly || 0), 0)
 
   return (
     <div className="space-y-6">
@@ -59,7 +61,7 @@ export function BrandIntelligenceView() {
           </div>
           <div className="rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur-xs text-right">
             <div className="text-[10px] uppercase font-mono text-slate-400">Tiềm năng tăng doanh thu CRO</div>
-            <div className="text-lg font-extrabold text-emerald-400">+$7,460 / tháng</div>
+            <div className="text-lg font-extrabold text-emerald-400">+${totalUpliftMonthly.toLocaleString()} / tháng</div>
           </div>
         </div>
       </div>

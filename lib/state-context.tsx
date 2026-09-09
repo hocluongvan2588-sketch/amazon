@@ -77,6 +77,7 @@ import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
 import { DEFAULT_RATE_CARDS } from './logistics-engine'
 import { AIOperationsOrchestrator } from './ai-engine'
+import { DEMO_PASSWORD } from './auth-constants'
 import type { SyncResult } from './amazon-sp-api'
 
 export type ActiveNavTab =
@@ -501,14 +502,17 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // Auth methods
   const login = (email: string, pass: string): boolean => {
     const user = teamMembers.find((m) => m.email.toLowerCase() === email.trim().toLowerCase())
-    if (user && (pass === 'Anthai@88' || pass === user.password || pass === 'admin123')) {
+    // Sprint audit: MỘT nguồn mật khẩu demo (auth-constants), đã bỏ backdoor
+    // 'admin123' và bỏ việc in mật khẩu trong thông báo lỗi (trước đây leak
+    // 'Anthai@88' ngay trên màn hình đăng nhập).
+    if (user && (pass === DEMO_PASSWORD || pass === user.password)) {
       setIsAuthenticated(true)
       saveToStorage('vexim_auth', true)
       setCurrentRole(user.role)
       showToast(`Đăng nhập thành công: ${user.fullName} (${user.role.replace(/_/g, ' ')})`, 'success')
       return true
     }
-    showToast('Email hoặc mật khẩu không chính xác. Mật khẩu chuẩn: Anthai@88', 'error')
+    showToast('Email hoặc mật khẩu không chính xác.', 'error')
     return false
   }
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { DEMO_PASSWORD } from '@/lib/auth-constants'
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import {
@@ -46,7 +47,7 @@ export function UserProfileAccount() {
     setPasswordError(null)
     setPasswordSuccess(false)
 
-    if (currentPassword !== 'Anthai@88' && currentPassword !== currentUser.password) {
+    if (currentPassword !== DEMO_PASSWORD && currentPassword !== currentUser.password) {
       setPasswordError('Mật khẩu hiện tại không chính xác.')
       return
     }
@@ -65,6 +66,8 @@ export function UserProfileAccount() {
     setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
+    // Lưu ý trung thực: đây là đổi mật khẩu DEMO phía client.
+    // Production dùng Supabase Auth (server-side) — xem runbook go-live.
   }
 
   return (

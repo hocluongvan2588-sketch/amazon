@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
+import { DEMO_PASSWORD } from '@/lib/auth-constants'
 import {
   ArrowRight,
   Eye,
@@ -14,7 +15,10 @@ import {
 export function LoginScreen() {
   const { login } = useAppState()
   const [email, setEmail] = useState('hocluongvan88@gmail.com')
-  const [password, setPassword] = useState('Anthai@88')
+  // Sprint audit: KHÔNG prefill mật khẩu thật trên form (trước đây ai mở
+  // trang login cũng thấy mật khẩu). Nút "Đăng nhập nhanh demo" bên dưới
+  // vẫn điền hộ để tiện demo, giá trị lấy từ lib/auth-constants (1 nguồn).
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
 
@@ -68,9 +72,16 @@ export function LoginScreen() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="font-bold text-slate-300 block">
-              Mật khẩu:
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="font-bold text-slate-300 block">Mật khẩu:</label>
+              <button
+                type="button"
+                onClick={() => setPassword(DEMO_PASSWORD)}
+                className="text-[10px] font-bold text-indigo-300 hover:text-indigo-200 hover:underline"
+              >
+                Điền mật khẩu demo
+              </button>
+            </div>
             <div className="relative">
               <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input

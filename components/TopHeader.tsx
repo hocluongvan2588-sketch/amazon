@@ -3,7 +3,7 @@
 import { useOutsideClick } from "@/lib/useOutsideClick"
 import { NotificationCenterDropdown } from "@/components/NotificationCenterDropdown"
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { UserRole } from '@/lib/types'
 import {
@@ -61,6 +61,23 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false)
   const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
+  // Sprint audit: nhãn SP-API giờ là TRẠNG THÁI THẬT từ gateway (hết era
+  // "US Live" hardcode trong khi hệ thống đang SIMULATED)
+  const [spApiMode, setSpApiMode] = useState<'LIVE' | 'SIMULATED' | 'CHECKING'>('CHECKING')
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/amazon/sync')
+      .then((r) => r.json())
+      .then((d) => {
+        if (mounted && d?.spApi?.mode) setSpApiMode(d.spApi.mode)
+      })
+      .catch(() => {
+        if (mounted) setSpApiMode('SIMULATED')
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   const roleDropdownRef = useOutsideClick<HTMLDivElement>(() => setRoleDropdownOpen(false))
   const clientDropdownRef = useOutsideClick<HTMLDivElement>(() => setClientDropdownOpen(false))
@@ -205,14 +222,30 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
           </div>
         )}
 
-        {/* Live SP-API Indicator */}
-        <div className="hidden lg:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 text-[11px] font-medium text-emerald-800">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-          </span>
-          <span>SP-API: <strong className="font-semibold text-emerald-900">US Live</strong></span>
-        </div>
+        {/* SP-API Indicator — trạng thái thật từ /api/amazon/sync */}
+        {spApiMode === 'LIVE' ? (
+          <div className="hidden lg:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 text-[11px] font-medium text-emerald-800">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+            </span>
+            <span>SP-API: <strong className="font-semibold text-emerald-900">US Live</strong></span>
+          </div>
+        ) : spApiMode === 'SIMULATED' ? (
+          <div
+            title="Chưa cấu hình Amazon SP-API credentials — dữ liệu Amazon đang MÔ PHỎNG. Thêm credentials theo hướng dẫn ở tab Đồng bộ SP-API."
+            className="hidden lg:flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 cursor-help"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500"></span>
+            </span>
+            <span>SP-API: <strong className="font-semibold text-amber-900">Mô Phỏng (Chưa Kết Nối)</strong></span>
+          </div>
+        ) : (
+          <div className="hidden lg:flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500">
+            <span>SP-API: <strong>Đang kiểm tra...</strong></span>
+          </div>
+        )}
       </div>
 
       {/* Right: Search, AI Scanner, AI Chatbot & User Profile with Logout */}

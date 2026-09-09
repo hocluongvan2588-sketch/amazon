@@ -1852,7 +1852,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-01-superadmin',
     fullName: 'Lương Văn Học',
     email: 'hocluongvan88@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'SUPER_ADMIN',
     department: 'Ban Điều Hành & Quản Trị Tối Cao',
     title: 'Chief Executive Officer & Super Admin',
@@ -1868,7 +1868,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-02-ops',
     fullName: 'Nguyễn Tuấn Anh',
     email: 'hocluongvan25@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'OPS_MANAGER',
     department: 'Ban Quản Trị & Vận Hành Tổng Thể',
     title: 'Amazon Operations Director',
@@ -1884,7 +1884,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-03-ppc',
     fullName: 'Lương Hoàng Minh',
     email: 'luonghoangminh88@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'PPC_SPECIALIST',
     department: 'Team Quảng Cáo & Growth PPC',
     title: 'Lead PPC & Growth Engineering Specialist',
@@ -1900,7 +1900,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-04-logistics',
     fullName: 'Ánh Nguyễn',
     email: 'anhnguyen94@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'SUPPLY_CHAIN_SPECIALIST',
     department: 'Team Kho Vận & Chuỗi Cung Ứng FBA',
     title: 'Senior FBA Logistics & 3PL Manager',
@@ -1916,7 +1916,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-05-brand',
     fullName: 'Trần Thu Hà',
     email: 'hocluongvan26@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'BRAND_CS_SPECIALIST',
     department: 'Team Listing, CRO & Chăm Sóc Khách Hàng',
     title: 'Brand Experience & Listing Optimization Manager',
@@ -1932,7 +1932,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-06-legal',
     fullName: 'Lê Hoàng Nam',
     email: 'hocluongvan2588@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'COMPLIANCE_SPECIALIST',
     department: 'Team Pháp Lý, FDA & Soạn Đơn Kháng Cáo POA',
     title: 'Head of Amazon Compliance & Policy Counsel',
@@ -1948,7 +1948,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-07-ae',
     fullName: 'Phạm Minh Trang',
     email: 'hocluongvan2788@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'ACCOUNT_EXECUTIVE',
     department: 'Team Quản Lý Khách Hàng & Đối Tác',
     title: 'Senior Account Executive',
@@ -1964,7 +1964,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-08-client-vina',
     fullName: 'Nguyễn Văn Hùng',
     email: 'hocluongvan22@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'CLIENT_SUPPLIER',
     department: 'Công ty Cổ phần Vinacacao Việt Nam',
     title: 'Tổng Giám Đốc (CEO Vinacacao)',
@@ -1980,7 +1980,7 @@ export const mockTeamMembers: TeamMember[] = [
     id: 'user-09-client-anan',
     fullName: 'Trần Thị Thu Thảo',
     email: 'hocluongvvan33@gmail.com',
-    password: 'Anthai@88',
+    password: '••••••••', // demo — quản lý ở lib/auth-constants.ts
     role: 'CLIENT_SUPPLIER',
     department: 'Công ty TNHH Thảo Mộc An An',
     title: 'Nhà Sáng Lập (Founder Thảo Mộc An An)',

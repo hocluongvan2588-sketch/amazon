@@ -546,8 +546,8 @@ export function MasterAdminControlCenter() {
                 <input
                   type="text"
                   required
-                  placeholder="Anthai@88"
-                  value={newMemberForm.password || 'Anthai@88'}
+                  placeholder="Mật khẩu khởi tạo cho thành viên mới"
+                  value={newMemberForm.password || ''}
                   onChange={(e) => setNewMemberForm({ ...newMemberForm, password: e.target.value })}
                   className="mt-1 w-full rounded-lg border border-slate-200 p-2 text-slate-900 font-mono focus:outline-none focus:ring-2 focus:ring-purple-500"
                 />
