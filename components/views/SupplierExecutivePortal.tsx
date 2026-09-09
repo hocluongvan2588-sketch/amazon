@@ -48,8 +48,9 @@ export function SupplierExecutivePortal() {
   const amazonReferralFee = grossSales * 0.15 // 15% referral
   const fbaFulfillmentFee = grossSales * 0.22 // ~22% FBA pick & pack
   const ppcSpend = clientReport.adSpend
+  const oceanFreightAnd3pl = grossSales * 0.065 // ~6.5% Ocean freight + 3PL buffer storage & drayage
   const cogsManufacturing = grossSales * 0.28 // ~28% COGS
-  const estimatedNetProfit = grossSales - amazonReferralFee - fbaFulfillmentFee - ppcSpend - cogsManufacturing
+  const estimatedNetProfit = grossSales - amazonReferralFee - fbaFulfillmentFee - ppcSpend - oceanFreightAnd3pl - cogsManufacturing
 
   return (
     <div className="space-y-6">
@@ -176,6 +177,13 @@ export function SupplierExecutivePortal() {
           <div className="flex items-center justify-between p-3 rounded-xl bg-red-50/40 border border-red-100 text-red-900 font-medium">
             <span>(-) Chi Phí Quảng Cáo Amazon PPC Ads:</span>
             <span className="font-bold">-{formatMoney(ppcSpend)} ({clientReport.tacos}%)</span>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-xl bg-cyan-50/40 border border-cyan-100 text-cyan-900 font-medium">
+            <span className="flex items-center gap-1.5">
+              <span>(-) Chi Phí Vận Tải Quốc Tế & Kho Đệm 3PL California (Ocean Freight & 3PL):</span>
+            </span>
+            <span className="font-bold">-{formatMoney(oceanFreightAnd3pl)} (6.5%)</span>
           </div>
 
           <div className="flex items-center justify-between p-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-800 font-medium">
