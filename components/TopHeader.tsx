@@ -5,6 +5,7 @@ import { NotificationCenterDropdown } from "@/components/NotificationCenterDropd
 
 import React, { useEffect, useState } from 'react'
 import { useAppState } from '@/lib/state-context'
+import { supabase } from '@/lib/supabase'
 import { UserRole } from '@/lib/types'
 import {
   Bell,
@@ -35,6 +36,7 @@ import {
   UserCheck,
   UserCog,
   Zap,
+  Database,
 } from 'lucide-react'
 
 export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
@@ -64,6 +66,43 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
   // Sprint audit: nhãn SP-API giờ là TRẠNG THÁI THẬT từ gateway (hết era
   // "US Live" hardcode trong khi hệ thống đang SIMULATED)
   const [spApiMode, setSpApiMode] = useState<'LIVE' | 'SIMULATED' | 'CHECKING'>('CHECKING')
+
+  // Sprint 4.1: badge trạng thái DB — kiểm tra CLIENT-SIDE từ trình duyệt người dùng
+  // (sandbox server bị chặn mạng tới Supabase nhưng browser thì không). Báo đúng
+  // migration nào còn thiếu thay vì để người dùng đoán "dữ liệu mới chưa chạy".
+  const [dbStatus, setDbStatus] = useState<{
+    ok: string[]
+    missing: string[]
+    error: boolean
+  }>({ ok: [], missing: [], error: false })
+  useEffect(() => {
+    let mounted = true
+    const tables: { name: string; migration: string }[] = [
+      { name: 'products', migration: 'seed 20260910' },
+      { name: 'amazon_listings', migration: '20260914' },
+      { name: 'customer_inquiries', migration: '20260915' },
+      { name: 'product_documents', migration: '20260915' },
+    ]
+    ;(async () => {
+      const ok: string[] = []
+      const missing: string[] = []
+      let error = false
+      for (const t of tables) {
+        try {
+          const { error: qErr } = await supabase.from(t.name).select('id', { count: 'exact', head: true })
+          if (qErr && /relation|does not exist/i.test(qErr.message)) missing.push(`${t.name} (chạy migration ${t.migration})`)
+          else if (qErr) { missing.push(`${t.name}: ${qErr.message.slice(0, 60)}`); error = true }
+          else ok.push(t.name)
+        } catch {
+          error = true
+        }
+      }
+      if (mounted) setDbStatus({ ok, missing, error })
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [])
   useEffect(() => {
     let mounted = true
     fetch('/api/amazon/sync')
@@ -219,6 +258,35 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* DB Indicator — minh bạch dữ liệu sống trong Supabase (client-side check) */}
+        {dbStatus.ok.length === 4 ? (
+          <div
+            title={`Cả 4 bảng cốt lõi đều sống trong Supabase: ${dbStatus.ok.join(', ')}`}
+            className="hidden lg:flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/70 px-2.5 py-1 text-[11px] font-medium text-emerald-800 cursor-help"
+          >
+            <Database size={12} />
+            <span>DB: <strong className="font-semibold text-emerald-900">4/4 bảng LIVE</strong></span>
+          </div>
+        ) : dbStatus.ok.length > 0 || dbStatus.missing.length > 0 ? (
+          <div
+            title={`Bảng đã sống: ${dbStatus.ok.join(', ') || '—'}. Còn thiếu: ${dbStatus.missing.join('; ')}. Chạy các migration tương ứng trong Supabase SQL Editor rồi tải lại trang.`}
+            className="hidden lg:flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 cursor-help"
+          >
+            <Database size={12} />
+            <span>
+              DB: <strong className="font-semibold text-amber-900">{dbStatus.ok.length}/4 bảng — thiếu migration</strong>
+            </span>
+          </div>
+        ) : (
+          <div
+            title={dbStatus.error ? 'Không kiểm tra được Supabase từ trình duyệt — kiểm tra env NEXT_PUBLIC_SUPABASE_*' : 'Đang kiểm tra kết nối Supabase...'}
+            className="hidden lg:flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-500 cursor-help"
+          >
+            <Database size={12} />
+            <span>DB: <strong>{dbStatus.error ? 'Không kết nối' : 'Đang kiểm tra...'}</strong></span>
           </div>
         )}
 
