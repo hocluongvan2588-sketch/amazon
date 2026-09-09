@@ -1,47 +1,46 @@
-# TÀI LIỆU ĐÀO TẠO NỘI BỘ VEXIM — MODULE 04
+# GIÁO TRÌNH ĐÀO TẠO NỘI BỘ VEXIM GLOBAL — MODULE 04
 ## CẨM NANG ĐÀO TẠO CHUYÊN SÂU BRAND, LISTING CRO & TRẢI NGHIỆM KHÁCH HÀNG (CX)
 
-**Mã tài liệu:** VXM-TRN-04  
+**Mã tài liệu:** VXM-TRN-04-EXP  
 **Đối tượng:** Chuyên viên Nội dung, Designer, Brand Lead & CS Specialist Vexim  
 **Trưởng bộ môn:** Trần Thu Hà (`hocluongvan26@gmail.com` — Brand Experience & Listing Lead)  
 **Phiên bản:** 2.0 (Tương thích Thuật toán Rufus AI & Amazon Brand Registry 2.0)
 
 ---
 
-## 1. MỤC TIÊU & CHỈ SỐ BẮT BUỘC (KPIS)
-* **Tỷ lệ Chuyển đổi Trang Sản Phẩm (Unit Session % / CVR):** $\ge 15\% - 18\%$.
-* **Điểm Chất lượng Listing (Listing Quality Score):** $\ge 92 / 100$.
-* **Thời gian Phản hồi Khách hàng (Contact Response Time):** $\le 24$ giờ (100% On-time).
-* **Tỷ lệ Đánh giá Trung bình (Product Rating):** $\ge 4.5 / 5.0\text{ sao}$.
+## PHẦN 1: CÔNG THỨC VIẾT LISTING CHUẨN THUẬT TOÁN RUFUS AI & COSMO 2026
 
----
+Thuật toán tìm kiếm mới của Amazon (Rufus AI & COSMO) tập trung vào **Đồ thị ý định của người mua (User Intent Graph)** thay vì chỉ quét từ khóa thô.
 
-## 2. CÔNG THỨC VIẾT LISTING CHUẨN THUẬT TOÁN RUFUS AI & COSMO 2026
-
-### 2.1. Cấu trúc Tiêu Đề Vàng (Product Title Formula - Tối đa 200 ký tự)
+### 1.1. Cấu trúc Tiêu Đề Vàng (Product Title Formula - Tối đa 200 ký tự)
 $$\text{Title} = \text{[Brand]} + \text{[Core Benefit Keyword]} + \text{[Key Feature/Origin]} + \text{[Pack Size/Weight]}$$
 * *Ví dụ chuẩn:* `"Vinacacao Pure Single Origin 70% Dark Chocolate Bar (Ben Tre, Vietnam) — 3.5oz Pack of 4"`
 
-### 2.2. 5 Bullet Points Tập Trung Giải Quyết Nỗi Đau (Pain Points)
+### 1.2. 5 Key Feature Bullets Tập Trung Giải Quyết Nỗi Đau (Pain Points)
 * **Bullet 1:** Nguồn gốc & Tính độc bản (*Authentic Single Origin Mekong Delta*).
-* **Bullet 2:** Hương vị & Chất lượng cốt lõi (*Pure Rich Bittersweet Taste*).
+* **Bullet 2:** Hương vị & Chất lượng cốt lõi (*Pure Rich Bittersweet Taste, 22-24% Natural Fat*).
 * **Bullet 3:** Chứng chỉ Sức khỏe (*USDA Organic, Non-GMO Verified*).
-* **Bullet 4:** Thành phần Sạch (*Clean Ingredients: 0% Palm Oil, Vegan*).
-* **Bullet 5:** Quy cách Đóng gói & Quà tặng (*Premium Gift Foil Packaging*).
+* **Bullet 4:** Thành phần Sạch (*Clean Ingredients: 0% Palm Oil, Vegan, Gluten-Free*).
+* **Bullet 5:** Quy cách Đóng gói & Quà tặng (*Airtight Protective Foil Packaging, Luxury Gifting*).
 
-### 2.3. Backend Search Terms (249 Bytes)
-* Không dùng dấu phẩy, không lặp lại từ khóa đã có ở Title, chỉ điền các từ khóa đồng nghĩa và từ lóng tìm kiếm của người Mỹ.
-
----
-
-## 3. THIẾT KẾ PREMIUM A+ CONTENT & BRAND STORY
-
-* **Brand Story Carousel:** Giới thiệu hình ảnh vùng nguyên liệu Bến Tre / Nghệ An, nông dân thu hoạch thực tế để khơi gợi cảm xúc di sản văn hóa Việt Nam.
-* **Bảng so sánh tính năng (Comparison Chart):** So sánh sản phẩm xưởng VN với các loại hóa chất/sản phẩm công nghiệp thông thường để kích thích khách mua gói combo giá cao.
+### 1.3. Backend Search Terms (249 Bytes)
+* Không dùng dấu phẩy, không lặp lại từ khóa đã có ở Title, chỉ điền các từ khóa đồng nghĩa, từ lóng tìm kiếm ngách của người Mỹ.
 
 ---
 
-## 4. QUY CHUẨN AN TOÀN CHĂM SÓC KHÁCH HÀNG (CUSTOMER SAFETY GATE)
+## PHẦN 2: THIẾT KẾ PREMIUM A+ CONTENT (EBC) & BRAND STOREFRONT
+
+* **Bộ ảnh Gallery 7 hình chuẩn:**
+  1. *Ảnh 1 (Hero Image):* Nền trắng tinh khiết $2000 \times 2000\text{ px}$, chiếm $\ge 85\%$ diện tích khung hình.
+  2. *Ảnh 2 (Infographic Lợi ích):* Bảng thành phần dinh dưỡng sạch và chứng nhận USDA Organic.
+  3. *Ảnh 3 (Kích thước & Quy cách):* Kích thước thực tế cầm trên tay.
+  4. *Ảnh 4–5 (Lifestyle Context):* Cảnh người Mỹ thưởng thức cà phê/socola trong phòng khách hiện đại hoặc tập yoga với nhang trầm.
+  5. *Ảnh 6 (Bảo chứng Chất lượng):* Hình ảnh nhà máy và người nông dân Việt Nam thu hoạch organic.
+  6. *Ảnh 7 (Video sản phẩm 30-45s):* Mở hộp và trải nghiệm thực tế.
+
+---
+
+## PHẦN 3: QUY TRÌNH PHÂN CẤP & XỬ LÝ TIN NHẮN KHÁCH HÀNG (CUSTOMER SERVICE)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -60,3 +59,9 @@ $$\text{Title} = \text{[Brand]} + \text{[Core Benefit Keyword]} + \text{[Key Fea
 │    Dị vật, Khiếu nại FDA)│   gọi điện/gửi thư chính thức trong vòng 2 giờ.  │
 └──────────────────────────┴──────────────────────────────────────────────────┘
 ```
+
+### Mẫu Thư Xử Lý Sự Cố Khẩn Cấp Bằng Tiếng Anh (Chỉ gửi khi có duyệt của Legal Lead):
+> *"Dear [Customer Name],*  
+> *Thank you for bringing this matter to our immediate attention. We deeply regret hearing about your experience with [Product Name]. At [Brand], customer safety is our utmost priority.*  
+> *We have initiated an immediate full refund for your order, and our QA management team has isolated the production lot for comprehensive inspection. We would appreciate the opportunity to speak with you directly to ensure your well-being. Please let us know the best time to reach you.*  
+> *Sincerely, [Operations Director Name] — [Brand] Executive Care."*

@@ -1,73 +1,122 @@
-# TÀI LIỆU ĐÀO TẠO NỘI BỘ VEXIM — MODULE 01
-## CẨM NANG ONBOARDING & HỆ THỐNG VẬN HÀNH VEXIM GLOBAL (VEXIM OS)
+# GIÁO TRÌNH ĐÀO TẠO NỘI BỘ VEXIM GLOBAL — MODULE 01
+## CẨM NANG ONBOARDING, TRIẾT LÝ VẬN HÀNH & HỆ ĐIỀU HÀNH DOANH NGHIỆP (VEXIM OS)
 
-**Mã tài liệu:** VXM-TRN-01  
-**Đối tượng:** Toàn bộ Nhân viên mới, Chuyên viên & Trưởng bộ phận Vexim  
-**Chủ quản ban hành:** Ban Giám Đốc Vexim Global (`hocluongvan88@gmail.com`)  
-**Phiên bản:** 2.0 (Chuẩn hóa 2026)
+**Mã tài liệu:** VXM-TRN-01-EXP  
+**Phiên bản:** 2.0 (Chuẩn hóa toàn diện 2026)  
+**Tác giả & Phê duyệt:** Lương Văn Học (`hocluongvan88@gmail.com` — Tổng Giám Đốc Vexim Global)  
+**Phạm vi áp dụng:** Toàn bộ nhân sự mới, chuyên viên, trưởng bộ phận và đối tác chiến lược của Vexim
 
 ---
 
-## 1. SỨ MỆNH & TRIẾT LÝ VẬN HÀNH CỦA VEXIM
+## PHẦN 1: TỔNG QUAN VỀ VEXIM GLOBAL & ĐỊNH VỊ THỊ TRƯỜNG
 
-### 1.1. Sứ mệnh cốt lõi
-Vexim không phải là một "Agency chạy quảng cáo thuê" hay đơn vị dịch vụ thông thường. Vexim là **"Nền tảng Tăng tốc Thương hiệu Xuất khẩu Toàn diện (Amazon Accelerator & Full-Service Enabler)"**, đồng hành cùng các nhà sản xuất hàng đầu Việt Nam (Vinacacao, Thảo Mộc An An, Lotus Craft...) để xây dựng tài sản thương hiệu triệu đô bền vững trên thị trường Mỹ.
+### 1.1. Chúng ta là ai?
+**Vexim Global** không phải là một đơn vị dịch vụ Marketing đơn thuần, và càng không phải là một "Agency chạy Ads thuê" ngắn hạn. 
+Vexim là **Nền Tảng Tăng Tốc Xuất Khẩu Thương Hiệu Xuyên Biên Giới (Cross-Border Amazon Accelerator & Brand Enabler)**. 
+
+Chúng ta đứng ra làm cầu nối toàn diện:
+* **Đầu vào:** Hợp tác với các nhà máy, hợp tác xã sản xuất lớn của Việt Nam (sở hữu vùng nguyên liệu, chứng chỉ ISO/HACCP, sản phẩm chất lượng cao như Cacao Bến Tre, Nhang trầm Nghệ An, Thủ công mỹ nghệ tre/gỗ).
+* **Vận hành:** Ứng dụng nền tảng công nghệ Vexim Platform để xử lý toàn bộ bài toán chuỗi cung ứng 47 ngày từ Cát Lái sang Long Beach, thiết lập pháp nhân Mỹ (US LLC), bảo hộ nhãn hiệu USPTO, thuật toán quảng cáo tự động và chăm sóc khách hàng bản địa.
+* **Đầu ra:** Doanh thu triệu USD, lợi nhuận ròng bền vững và thương hiệu Việt Nam đứng vững trên Top 1–10 BSR Amazon Hoa Kỳ.
 
 ### 1.2. Triết lý Vận hành: "AI-Powered with Strict Human-in-the-Loop"
-* **80% Tác vụ dữ liệu được Tự Động Hóa:** Thuật toán AI liên tục quét tồn kho FBA, bóc tách từ khóa tìm kiếm (Search Term Harvesting), theo dõi thời gian tàu biển và phát hiện rủi ro pháp lý.
-* **100% Quyết định Tài chính & Pháp lý do Con Người Phê Duyệt:** AI chỉ tạo ra Đề xuất (Proposals). Các Trưởng bộ phận chuyên môn và Tổng Giám Đốc là người trực tiếp bấm **"Duyệt Lệnh"** trước khi hệ thống bắn API sang Amazon.
+Tại Vexim, chúng ta ứng dụng công nghệ trí tuệ nhân tạo (Multi-Agent System) vào mọi khâu, nhưng tuân thủ **nguyên tắc bất di bất dịch**:
+1. **AI là trợ thủ phân tích dữ liệu tốc độ cao (80% tự động hóa):** Quét hàng triệu từ khóa, đo lường tốc độ bán hàng, dự báo ngày đứt tồn kho FBA, phát hiện review tiêu cực.
+2. **Con người là chốt chặn an toàn cuối cùng (100% quyền phê duyệt):** Mọi hành động nhạy cảm về tài chính (tăng ngân sách Ads, giảm giá bán) hoặc pháp lý (soạn đơn kháng cáo, phản hồi khiếu nại an toàn) bắt buộc phải do Trưởng bộ phận chuyên trách bấm **"Duyệt Lệnh"**. Tuyệt đối không để AI tự ý gây rủi ro cho gian hàng.
 
 ---
 
-## 2. BẢN ĐỒ 9 TÀI KHOẢN NHÂN SỰ & PHÂN QUYỀN TRUY CẬP (RBAC)
+## PHẦN 2: BẢN ĐỒ 9 VAI TRÒ NHÂN SỰ & QUYỀN HẠN TRUY CẬP (RBAC)
 
-Hệ thống phân chia quyền hạn truy cập nghiêm ngặt để đảm bảo an toàn dữ liệu và tối ưu không gian làm việc:
+Hệ thống phân quyền Role-Based Access Control (RBAC) trên cơ sở dữ liệu Supabase đảm bảo tính bảo mật và chuyên môn hóa:
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                 BẢN ĐỒ 9 TÀI KHOẢN & PHÂN HỆ LÀM VIỆC TẠI VEXIM             │
-├──────────────────────────┬─────────────────────────────┬────────────────────┤
-│ EMAIL ĐĂNG NHẬP          │ HỌ TÊN & CHỨC DANH          │ PHÂN HỆ LÀM VIỆC   │
-├──────────────────────────┼─────────────────────────────┼────────────────────┤
-│ hocluongvan88@gmail.com  │ Lương Văn Học (Super Admin) │ Bàn Tổng Giám Đốc  │
-│ hocluongvan25@gmail.com  │ Nguyễn Tuấn Anh (Ops Lead)  │ Quản Trị Vận Hành  │
-│ luonghoangminh88@gmail.co│ Lương Hoàng Minh (PPC Lead) │ PPC & Growth Desk  │
-│ anhnguyen94@gmail.com    │ Ánh Nguyễn (Logistics Lead) │ Supply Chain & FBA │
-│ hocluongvan26@gmail.com  │ Trần Thu Hà (Brand & CX)    │ Brand Intel & CS   │
-│ hocluongvan2588@gmail.com│ Lê Hoàng Nam (Legal Lead)   │ Compliance & POA   │
-│ hocluongvan2788@gmail.com│ Phạm Minh Trang (Senior AE) │ Client Success     │
-│ hocluongvan22@gmail.com  │ Nguyễn Văn Hùng (Vinacacao) │ Cổng Chủ Xưởng VN  │
-│ hocluongvvan33@gmail.com │ Trần Thị Thu Thảo (An An)   │ Cổng Chủ Xưởng VN  │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│                 BẢN ĐỒ PHÂN QUYỀN VÀ TRÁCH NHIỆM 9 TÀI KHOẢN TẠI VEXIM                      │
+├──────────────────────────┬─────────────────────────────┬────────────────────────────────────┤
+│ EMAIL ĐĂNG NHẬP          │ HỌ TÊN & VAI TRÒ CHUYÊN MÔN │ PHẠM VI TRÁCH NHIỆM & QUYỀN HẠN    │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 👑 hocluongvan88@gmail.com│ Lương Văn Học               │ Phê duyệt chiến lược vĩ mô, ngân   │
+│                          │ (Master Super Admin / CEO)  │ sách > $50k, ký HĐ xưởng mới, P&L. │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ ⚙️ hocluongvan25@gmail.com│ Nguyễn Tuấn Anh             │ Điều phối tổng thể các dự án xưởng,│
+│                          │ (Operations Director)       │ xử lý task ách tắc, điều phối SLA. │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 🎯 luonghoangminh88@gmail│ Lương Hoàng Minh            │ Quản trị toàn bộ chiến dịch Ads,   │
+│                          │ (PPC & Growth Lead)         │ thuật toán thu hoạch từ khóa, ACOS.│
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 🚢 anhnguyen94@gmail.com │ Ánh Nguyễn                  │ Quản trị tồn kho FBA, chuỗi cung   │
+│                          │ (Logistics & FBA Hub Lead)  │ ứng 47 ngày, kho 3PL, in tem nhãn. │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 🎨 hocluongvan26@gmail.com│ Trần Thu Hà                 │ Tối ưu Listing CRO, A+ Content,    │
+│                          │ (Brand Experience & CS Lead)│ bóc tách Voice of Customer, CS 24h.│
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ ⚖️ hocluongvan2588@gmail │ Lê Hoàng Nam                │ Thẩm định FDA, hồ sơ FSVP/PCQI,    │
+│                          │ (Compliance & Legal Counsel)│ soạn đơn kháng cáo POA, USPTO.     │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 💼 hocluongvan2788@gmail │ Phạm Minh Trang             │ Cầu nối với chủ xưởng, gửi báo cáo │
+│                          │ (Senior Account Executive)  │ P&L tháng, xử lý thắc mắc xưởng.   │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 🏭 hocluongvan22@gmail.com│ Nguyễn Văn Hùng             │ Theo dõi P&L, doanh số, tồn kho của│
+│                          │ (CEO Vinacacao USA Direct)  │ riêng thương hiệu Vinacacao.       │
+├──────────────────────────┼─────────────────────────────┼────────────────────────────────────┤
+│ 🌿 hocluongvvan33@gmail  │ Trần Thị Thu Thảo           │ Theo dõi P&L, doanh số, tồn kho của│
+│                          │ (Founder Thảo Mộc An An)    │ riêng thương hiệu Thảo Mộc An An.  │
+└──────────────────────────┴─────────────────────────────┴────────────────────────────────────┘
 ```
 
 ---
 
-## 3. LỊCH TRÌNH 7 NGÀY ĐẦU TIÊN CỦA NHÂN SỰ MỚI (7-DAY ONBOARDING ROADMAP)
+## PHẦN 3: LỘ TRÌNH 7 NGÀY ĐÀO TẠO HÒA NHẬP (7-DAY ONBOARDING SPRINT)
 
-* **Ngày 1 (Nhận tài khoản & Khảo sát hệ thống):**
-  * Đăng nhập vào nền tảng Vexim với email được cấp và mật khẩu mặc định: `Anthai@88`.
-  * Vào menu **"Tài Khoản Cá Nhân"** để đổi mật khẩu bảo mật của riêng bạn.
-  * Làm quen với thanh điều hướng Sidebar và chuông thông báo Real-time trên TopHeader.
-* **Ngày 2 (Học nghiệp vụ bộ phận):**
-  * Đọc kỹ Module đào tạo chuyên môn của bộ phận mình (PPC, Kho vận, Brand, hoặc Pháp lý).
-* **Ngày 3 (Thao tác trên Sandbox Data):**
-  * Thực hành duyệt các đề xuất AI mẫu, lọc dữ liệu theo từng nhà cung cấp (Vinacacao, An An, Lotus Craft).
-* **Ngày 4 (Nghiệp vụ Phối hợp Liên phòng ban):**
-  * Học cơ chế bắt tay giữa PPC & Kho vận (Inventory-PPC Handshake): Khi nào hạ Bid để bảo vệ kho?
-* **Ngày 5 (Quy chuẩn An toàn & Escalate sự cố):**
-  * Nắm vững quy trình khóa AI tự động khi gặp từ khóa khiếu nại dị ứng/pháp lý CPSC/FDA.
-* **Ngày 6 (Thực hành In Tem Nhãn & Tạo Chiến Dịch):**
-  * Thao tác xuất file PDF tem nhãn FNSKU và Box ID chuẩn 300 DPI.
-* **Ngày 7 (Đánh giá sát hạch đầu vào):**
-  * Hoàn thành bài kiểm tra 10 câu hỏi nghiệp vụ cùng Trưởng bộ phận.
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 LỘ TRÌNH 7 NGÀY ĐÀO TẠO DÀNH CHO NHÂN SỰ MỚI                │
+├───────────────┬─────────────────────────────────────────────────────────────┤
+│ NGÀY 1        │ 🔑 KHỞI TẠO TÀI KHOẢN & KHẢO SÁT HỆ THỐNG:                  │
+│               │ • Đăng nhập với mật khẩu mặc định: Anthai@88.               │
+│               │ • Vào "Tài Khoản Cá Nhân" đổi mật khẩu bảo mật riêng.       │
+│               │ • Khảo sát thanh Sidebar, chuông thông báo Real-time.       │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 2        │ 📖 NGHIÊN CỨU GIÁO TRÌNH CHUYÊN MÔN:                        │
+│               │ • PPC đọc Module 02; Kho vận đọc Module 03;                 │
+│               │ • Brand/CS đọc Module 04; Pháp lý đọc Module 05.            │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 3        │ 🧪 THỰC HÀNH TRÊN MÔI TRƯỜNG SANDBOX:                       │
+│               │ • Thực hành lọc dữ liệu theo từng nhà cung cấp.             │
+│               │ • Đọc hiểu các thẻ cảnh báo rủi ro (Critical, High, Opp).   │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 4        │ 🤝 BẮT TAY LIÊN BỘ PHẬN (CROSS-FUNCTIONAL WORKFLOW):        │
+│               │ • Học cách phối hợp giữa PPC & Kho vận khi hàng sắp hết.    │
+│               │ • Học cách phối hợp giữa CS & Pháp lý khi khách khiếu nại.  │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 5        │ 🚨 XỬ LÝ SỰ CỐ AN TOÀN & KHẨN CẤP:                          │
+│               │ • Thực hành tình huống phát hiện khiếu nại dị ứng FDA/CPSC. │
+│               │ • Kiểm tra quy trình ngắt AI tự động và chuyển quyền duyệt. │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 6        │ 🖨️ THAO TÁC CÔNG CỤ THỰC TẾ:                                │
+│               │ • Thực hành tạo 1 chiến dịch PPC mới.                       │
+│               │ • Thực hành xuất file PDF bộ tem nhãn FNSKU & Box ID.       │
+├───────────────┼─────────────────────────────────────────────────────────────┤
+│ NGÀY 7        │ 🎓 ĐÁNH GIÁ SÁT HẠCH & CẤP QUYỀN LIVE:                      │
+│               │ • Vượt qua bài kiểm tra 10 câu hỏi tình huống thực tế.      │
+│               │ • Chính thức tiếp nhận tài khoản gian hàng thật.             │
+└───────────────┴─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 4. 5 ĐIỀU RĂN KỶ LUẬT VẬN HÀNH TẠI VEXIM (CARDINAL RULES)
+## PHẦN 4: 5 ĐIỀU RĂN KỶ LUẬT VẬN HÀNH SỐNG CÒN (CARDINAL RULES)
 
-1. **Tuyệt đối không để xảy ra tình trạng Đứt hàng FBA (Zero Stock-out):** Mọi SKU chủ lực phải luôn duy trì $\ge 14$ ngày Days of Supply.
-2. **Tuyệt đối không để AI tự ý trả lời tin nhắn y tế/chấn thương:** Phải chuyển ngay cho Chuyên viên Pháp lý và Quản lý Vận hành trong 2 giờ.
-3. **Tuyệt đối không tăng giá thầu hoặc ngân sách vượt hạn mức an toàn:** Trần ngân sách ngày và trần CPC \$3.50 phải luôn được tôn trọng.
-4. **Tuyệt đối không nộp hồ sơ Amazon nếu chưa có kiểm tra GS1 & COA:** Không đẩy sản phẩm vi phạm bản quyền hoặc thiếu xét nghiệm vi sinh.
-5. **Bảo mật dữ liệu nhà xưởng 100%:** Nghiêm cấm chia sẻ doanh số, P&L của nhà xưởng này cho nhà xưởng khác.
+Mọi nhân sự tại Vexim phải thuộc nằm lòng 5 điều răn sau:
+
+1. **ĐIỀU RĂN 1 — TRIỆT TIÊU ĐỨT HÀNG (ZERO STOCK-OUT):**  
+   Mất hàng trên kệ FBA đồng nghĩa với việc mất Buy Box và tụt toàn bộ thứ hạng BSR được gầy dựng trong nhiều tháng. Mọi SKU chủ lực phải luôn duy trì số ngày đủ bán $\text{Days of Supply} \ge 14\text{ ngày}$.
+2. **ĐIỀU RĂN 2 — KHÔNG ĐỂ AI TỰ TRẢ LỜI SỰ CỐ Y TẾ:**  
+   Khi khách hàng nhắn tin chứa các từ khóa *Dị ứng, Ngộ độc, Dị vật, Bỏng, Rách da*, hệ thống tự động khóa AI; nhân viên phải lập tức chuyển hồ sơ cho Trưởng bộ phận Pháp lý và Giám đốc Vận hành xử lý trong 2 giờ.
+3. **ĐIỀU RĂN 3 — BẢO VỆ DÒNG TIỀN QUẢNG CÁO:**  
+   Không bao giờ điều chỉnh giá thầu vượt trần an toàn (\$3.50/click) và không vượt quá 105% ngân sách ngày đã được cấp duyệt.
+4. **ĐIỀU RĂN 4 — CHUẨN HÓA MÃ VẠCH GS1 & XÉT NGHIỆM COA TRƯỚC KHI XUẤT:**  
+   Không một sản phẩm nào được phép xuất khẩu nếu chưa có mã vạch chính chủ GS1 Việt Nam (đầu số 893) và phiếu kiểm nghiệm vi sinh/kim loại nặng COA từ phòng lab đạt chuẩn ISO 17025.
+5. **ĐIỀU RĂN 5 — BẢO MẬT DỮ LIỆU NHÀ XƯỞNG TUYỆT ĐỐI:**  
+   Dữ liệu doanh số, biên lợi nhuận, chiến lược sản phẩm của từng nhà xưởng là tài sản tuyệt mật. Nghiêm cấm tiết lộ ra ngoài hoặc trao đổi chéo giữa các thương hiệu.

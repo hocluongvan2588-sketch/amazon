@@ -68,6 +68,8 @@ function MainAppShell() {
         return <MasterAdminControlCenter />
       case 'user-profile':
         return <UserProfileAccount />
+      case 'training-academy':
+        return <TrainingKnowledgeHub />
 
       // Core Views
       case 'ai-operations':

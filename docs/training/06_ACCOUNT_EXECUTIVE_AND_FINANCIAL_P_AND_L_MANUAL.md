@@ -1,14 +1,18 @@
-# TÀI LIỆU ĐÀO TẠO NỘI BỘ VEXIM — MODULE 06
+# GIÁO TRÌNH ĐÀO TẠO NỘI BỘ VEXIM GLOBAL — MODULE 06
 ## CẨM NANG ĐÀO TẠO QUẢN LÝ KHÁCH HÀNG (ACCOUNT EXECUTIVE) & BÁO CÁO TÀI CHÍNH P&L
 
-**Mã tài liệu:** VXM-TRN-06  
+**Mã tài liệu:** VXM-TRN-06-EXP  
 **Đối tượng:** Account Executive (AE), Client Success Manager & Kế Toán Dự Án Vexim  
 **Trưởng bộ môn:** Phạm Minh Trang (`hocluongvan2788@gmail.com` — Senior Account Executive)  
 **Phiên bản:** 2.0 (Chuẩn hóa Báo cáo Tài chính P&L & Cổng Doanh Nghiệp)
 
 ---
 
-## 1. MỤC TIÊU & CHỈ SỐ BẮT BUỘC (KPIS)
+## PHẦN 1: BỘ CHỈ SỐ BẮT BUỘC & TRÁCH NHIỆM NGHỀ NGHIỆP CỦA ACCOUNT EXECUTIVE (AE)
+
+Account Executive tại Vexim là **"Đại Sứ Thương Hiệu & Cầu Nối Niềm Tin"** giữa Vexim và các Chủ Doanh Nghiệp Việt Nam (Vinacacao, Thảo Mộc An An, Lotus Craft...).
+
+### Bộ KPIs bắt buộc:
 * **Tỷ lệ Duy trì Khách hàng (Client Retention Rate):** $\ge 95\%$.
 * **Mức độ Hài lòng của Chủ Xưởng (CSAT Score):** $\ge 4.8 / 5.0$.
 * **Thời gian Xuất Báo cáo Tài chính Tháng:** Đúng ngày **01 hàng tháng**.
@@ -16,7 +20,7 @@
 
 ---
 
-## 2. QUY TRÌNH GIAO TIẾP VỚI CHỦ XƯỞNG VIỆT NAM (CLIENT COMMUNICATION CADENCE)
+## PHẦN 2: LỊCH TRÌNH CHĂM SÓC KHÁCH HÀNG ĐỊNH KỲ (CLIENT CADENCE)
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -40,19 +44,34 @@
 
 ---
 
-## 3. CÁCH ĐỌC & GIẢI TRÌNH BẢNG TÀI CHÍNH P&L MINH BẠCH
+## PHẦN 3: CÁCH ĐỌC & GIẢI TRÌNH BẢNG TÀI CHÍNH P&L MINH BẠCH
 
 Khi hướng dẫn Chủ Xưởng xem **"Cổng Doanh Nghiệp (Supplier Executive Portal)"**, AE phải giải thích rõ 5 dòng tiền:
 
-1. **Tổng Doanh Thu Xuất Khẩu (Gross Revenue USD):** Tổng tiền khách Mỹ thanh toán mua hàng trên Amazon.
-2. **Chi phí FBA & Phí Sàn (Amazon Fees ~30% – 33%):** Bao gồm phí lưu kho, phí hoa hồng 15%, phí Pick & Pack.
-3. **Chi phí Quảng cáo Ads (PPC Spend ~10% – 12%):** Tiền chi trả cho các chiến dịch Sponsored Ads (ACOS $\le 20\%$).
-4. **Chi phí Vận tải & Kho 3PL California (~8% – 10%):** Tiền cước tàu biển và phí lưu kho đệm.
-5. **LỢI NHUẬN RÒNG CHUYỂN VỀ TÀI KHOẢN (NET PROFIT):** Thường đạt từ **$35\% - 45\%$ doanh thu**, được bảo chứng bằng sao kê tài khoản ngân hàng số Mercury Bank tại Mỹ.
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                 5 DÒNG TIỀN TRÊN BÁO CÁO TÀI CHÍNH P&L MINH BẠCH            │
+├────────────────────────────────┬────────────────────────────────────────────┤
+│ DÒNG TIỀN                      │ Ý NGHĨA VÀ TỶ LỆ TRÊN GIÁ BÁN LẺ           │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ 1. Tổng Doanh Thu (Gross Sales)│ 100% Tổng tiền khách Mỹ thanh toán qua SP. │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ 2. Chi Phí Amazon & FBA        │ 30% – 33% (Hoa hồng sàn 15%, Pick & Pack,  │
+│                                │ phí lưu kho).                              │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ 3. Chi Phí Quảng Cáo (PPC)     │ 10% – 12% (Kiểm soát ACOS ≤ 20%).          │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ 4. Chi Phí Vận Tải & Kho 3PL   │ 8% – 10% (Cước tàu biển Cát Lái - LAX và   │
+│                                │ kho ngoại quan California).                │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ 💎 5. LỢI NHUẬN RÒNG THỰC NHẬN │ 35% – 45% (Chuyển về tài khoản ngân hàng số│
+│    (NET PROFIT CHUYỂN VỀ)      │ Mercury Bank tại Mỹ để rút về Việt Nam).   │
+└────────────────────────────────┴────────────────────────────────────────────┘
+```
 
 ---
 
-## 4. BỘ QUY TẮC XỬ LÝ KHỦNG HOẢNG TÂM LÝ KHÁCH HÀNG
+## PHẦN 4: BỘ QUY TẮC XỬ LÝ KHỦNG HOẢNG TÂM LÝ KHÁCH HÀNG
 
 1. **Khi Doanh số giảm trong tuần:** Không che giấu, chủ động gửi phân tích nguyên nhân (do đối thủ chạy Flash Deal hay biến động mùa vụ) kèm phương án khắc phục (bật Coupon 10%, scale từ khóa ngách).
 2. **Khi Hàng bị kẹt cảng do bão:** Lập tức đề xuất phương án bay Air Express 200 units để cứu nguy Buy Box trong lúc chờ tàu cập cảng.

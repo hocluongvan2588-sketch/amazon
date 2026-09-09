@@ -1,22 +1,16 @@
-# TÀI LIỆU ĐÀO TẠO NỘI BỘ VEXIM — MODULE 05
+# GIÁO TRÌNH ĐÀO TẠO NỘI BỘ VEXIM GLOBAL — MODULE 05
 ## CẨM NANG ĐÀO TẠO PHÁP LÝ AMAZON, TIÊU CHUẨN FDA & SOẠN ĐƠN KHÁNG CÁO (POA)
 
-**Mã tài liệu:** VXM-TRN-05  
+**Mã tài liệu:** VXM-TRN-05-EXP  
 **Đối tượng:** Chuyên viên Pháp lý, Compliance Officer & QA Lead Vexim  
 **Trưởng bộ môn:** Lê Hoàng Nam (`hocluongvan2588@gmail.com` — Head of Legal & Compliance Counsel)  
 **Phiên bản:** 2.0 (Chuẩn hóa Đạo luật FDA FSMA, FALCPA & Amazon Seller Performance)
 
 ---
 
-## 1. MỤC TIÊU & CHỈ SỐ BẮT BUỘC (KPIS)
-* **Điểm Sức khỏe Tài khoản (Account Health Rating - AHR):** $\ge 250 - 300 / 1000$ (Màu xanh - Healthy).
-* **Tỷ lệ Đơn hàng Lỗi (Order Defect Rate - ODR):** $< 0.8\%$ (Chuẩn Amazon $< 1.0\%$).
-* **Tỷ lệ Kháng Cáo Thành Công (POA Appeal Win Rate):** $\ge 95\%$.
-* **Thời gian giải quyết cờ đỏ vi phạm:** $\le 48$ giờ kể từ khi nhận thông báo.
+## PHẦN 1: 5 BỘ LUẬT LIÊN BANG HOA KỲ BẮT BUỘC PHẢI THUỘC LÒNG
 
----
-
-## 2. 5 BỘ LUẬT HOA KỲ BẮT BUỘC PHẢI THUỘC LÒNG
+Chuyên viên pháp lý là "người gác cổng an toàn" cho toàn bộ tài khoản doanh nghiệp. Phải nắm vững 5 đạo luật sau:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -43,9 +37,9 @@
 
 ---
 
-## 3. CÔNG THỨC SOẠN ĐƠN KHÁNG CÁO 3 PHẦN CHUẨN LUẬT SƯ (PLAN OF ACTION)
+## PHẦN 2: CÔNG THỨC SOẠN ĐƠN KHÁNG CÁO 3 PHẦN CHUẨN LUẬT SƯ (PLAN OF ACTION)
 
-Khi gian hàng dính cờ đỏ cảnh báo vi phạm của Amazon, Chuyên viên Pháp lý vào menu **"Legal & Soạn Đơn POA"** và triển khai theo đúng 3 phần:
+Khi gian hàng dính cờ đỏ cảnh báo vi phạm của Amazon, Chuyên viên Pháp lý mở menu **"Legal & Soạn Đơn POA"** và triển khai theo đúng 3 phần bắt buộc:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -53,7 +47,7 @@ Khi gian hàng dính cờ đỏ cảnh báo vi phạm của Amazon, Chuyên viê
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ 🔍 PHẦN 1: ROOT CAUSE OF THE ISSUE (Nguyên nhân gốc rễ)                     │
 │    • Nhận trách nhiệm rõ ràng, chỉ ra chính xác điểm yếu trong quy trình    │
-│      kiểm soát chất lượng tại xưởng hoặc lỗi đóng gói.                      │
+│      kiểm soát chất lượng tại xưởng hoặc lỗi đóng gói bao bì.               │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ ⚡ PHẦN 2: IMMEDIATE CORRECTIVE ACTIONS (Hành động khắc phục tức thì)       │
 │    • Đã hoàn tiền cho khách hàng, thu hồi lô hàng lỗi về kho 3PL California,│
@@ -67,7 +61,10 @@ Khi gian hàng dính cờ đỏ cảnh báo vi phạm của Amazon, Chuyên viê
 
 ---
 
-## 4. QUY TRÌNH HỒ SƠ FSVP & CHỈ ĐỊNH QI
+## PHẦN 3: CHƯƠNG TRÌNH THẨM TRA NHÀ CUNG CẤP NƯỚC NGOÀI (FSVP) & VAI TRÒ QI
 
-* Hướng dẫn Trưởng phòng QA/QC của xưởng tại Việt Nam hoàn thành chứng chỉ **FSPCA PCQI** (học 20 giờ).
-* Soạn văn bản chỉ định **"Designation of Qualified Individual"** có chữ ký của US LLC tại Wyoming để hợp thức hóa hồ sơ hải quan Mỹ.
+1. **Khái niệm:** Đạo luật FSMA yêu cầu nhà nhập khẩu tại Mỹ (US LLC) phải có hồ sơ chứng minh xưởng sản xuất tại Việt Nam đạt chuẩn an toàn thực phẩm.
+2. **Vai trò của Qualified Individual (QI):**
+   * Trưởng phòng QA/QC của nhà máy Việt Nam hoàn thành khóa học và nhận chứng chỉ **FSPCA PCQI (Preventive Controls Qualified Individual)**.
+   * US LLC tại Wyoming ban hành quyết định bổ nhiệm: `"Designation of Qualified Individual for FSVP Compliance"`.
+   * QI ký tên trên **Bản phân tích mối nguy (FSVP Hazard Analysis Plan)** và duyệt phiếu kiểm nghiệm vi sinh (COA) của từng lô hàng xuất khẩu.

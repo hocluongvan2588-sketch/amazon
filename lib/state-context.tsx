@@ -87,6 +87,7 @@ export type ActiveNavTab =
   | 'supplier-portal'
   | 'master-admin'
   | 'user-profile'
+  | 'training-academy'
 
 export type TimeRangeFilter = 'today' | 'yesterday' | '7days' | '30days' | '90days'
 
