@@ -598,6 +598,16 @@ export interface CompetitorReverseAsin {
   pricingStrategyInsight: string
 }
 
+/** Chỉ số phiên đầu vào từ SP-API Business Report (CTR/CVR/bounce) — phần duy nhất
+ *  cần Amazon cung cấp; mọi số suy ra do lib/cro-engine.ts tính từ đây. */
+export type CroMetricInput = Pick<
+  ConversionDiagnostic,
+  | 'sku' | 'asin' | 'title'
+  | 'ctr' | 'categoryBenchmarkCtr'
+  | 'unitSessionPercentage' | 'categoryBenchmarkCvr'
+  | 'bounceRate'
+>
+
 export interface ConversionDiagnostic {
   sku: string
   asin: string

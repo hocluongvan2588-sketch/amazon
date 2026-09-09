@@ -1505,7 +1505,7 @@ import {
   DynamicLeadTimeRoute,
   GeoFbaPlacementOption,
   CompetitorReverseAsin,
-  ConversionDiagnostic,
+  CroMetricInput,
   PoaDocument,
   TrademarkWatch,
 } from './types'
@@ -1755,38 +1755,29 @@ export const mockCompetitorReverseAsins: CompetitorReverseAsin[] = [
   },
 ]
 
-export const mockConversionDiagnostics: ConversionDiagnostic[] = [
+// Sprint audit: CHỈ giữ các chỉ số phiên (SP-API Business Report — hiện SIMULATED).
+// Mọi số suy ra (sessions, uplift, loại nghẽn, chẩn đoán) do lib/cro-engine.ts tính —
+// KHÔNG còn lưu sẵn +$4,620/+$2,840 hay câu chẩn đoán nào trong data.
+export const mockCroMetricInputs: CroMetricInput[] = [
   {
     sku: 'VXM-COCOA-70DK',
     asin: 'B0DC89X102',
     title: 'Vinacacao 70% Dark Chocolate Bar 4-Pack (Single Origin Vietnam)',
-    sessions7d: 4820,
-    unitSessionPercentage: 14.8, // CVR = 14.8% (Rất tốt)
-    categoryBenchmarkCvr: 11.2,
-    ctr: 0.48, // CTR hơi thấp (0.48% vs Benchmark 0.65%)
+    ctr: 0.48,
     categoryBenchmarkCtr: 0.65,
+    unitSessionPercentage: 14.8,
+    categoryBenchmarkCvr: 11.2,
     bounceRate: 34.2,
-    bottleneckType: 'IMAGE_GALLERY',
-    diagnosisTitleVi: 'Tỷ lệ nhấp (CTR) thấp hơn chuẩn ngành 26% do Ảnh đại diện (Main Image)',
-    diagnosisDetailVi: 'Khách hàng tìm kiếm thấy ảnh bao bì hiện tại có độ tương phản phông trắng chưa bắt mắt, thiếu huy hiệu "Single Origin Dak Lak Award Winning". Khi khách bấm vào thì tỷ lệ mua rất cao (14.8%).',
-    suggestedActionVi: 'Thay ảnh chính Hero Image với góc chụp nghiêng 45 độ hiển thị cả thanh chocolate bẻ đôi bóng mượt và bao bì sang trọng để kéo CTR từ 0.48% lên 0.72%.',
-    estimatedRevenueUpliftMonthly: 4620.00,
   },
   {
     sku: 'VXM-COCOA-PWD500',
     asin: 'B0DC90Y203',
     title: 'Pure Organic Vietnamese Cocoa Powder 500g (Unsweetened)',
-    sessions7d: 3120,
-    unitSessionPercentage: 7.4, // CVR = 7.4% (Thấp hơn benchmark 10.5%)
-    categoryBenchmarkCvr: 10.5,
-    ctr: 0.82, // CTR tốt
+    ctr: 0.82,
     categoryBenchmarkCtr: 0.65,
+    unitSessionPercentage: 7.4,
+    categoryBenchmarkCvr: 10.5,
     bounceRate: 58.6,
-    bottleneckType: 'PRICE_DISCONNECT',
-    diagnosisTitleVi: 'Tỷ lệ chuyển đổi (CVR) sụt giảm do thiếu bảng so sánh dinh dưỡng & công thức pha chế',
-    diagnosisDetailVi: 'Traffic vào rất đông (CTR 0.82%) nhưng 58% khách thoát trang vì không biết bột cacao nguyên chất này có dùng làm bánh Brownie và uống nóng được không.',
-    suggestedActionVi: 'Thêm module A+ Brand Story hiển thị 3 công thức đồ uống chuẩn Mỹ (Keto Smoothie, Hot Cocoa, Brownie Recipe) và chứng chỉ FDA Tested.',
-    estimatedRevenueUpliftMonthly: 2840.00,
   },
 ]
 

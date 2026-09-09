@@ -119,7 +119,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
           {
             title: 'KHÔNG GIAN BRAND, LISTING & CS',
             items: [
-              { id: 'brand-intelligence', label: 'Brand Intel & CRO Desk', icon: Target, badge: conversionDiagnostics.length > 0 ? `${conversionDiagnostics.length} CVR Gap` : undefined, badgeVariant: 'purple' },
+              { id: 'brand-intelligence', label: 'Brand Intel & CRO Desk', icon: Target, badge: conversionDiagnostics.filter((d) => d.unitSessionPercentage < d.categoryBenchmarkCvr).length > 0 ? `${conversionDiagnostics.filter((d) => d.unitSessionPercentage < d.categoryBenchmarkCvr).length} CVR Gap` : undefined, badgeVariant: 'purple' },
               { id: 'listings', label: 'Tối Ưu Listing & SEO', icon: Package },
               { id: 'products', label: 'Sản Phẩm & Tiếp Nhận', icon: Rocket },
               { id: 'customers', label: 'Chăm Sóc Khách Hàng (Inbox)', icon: MessageSquareWarning, badge: criticalSafetyMessages > 0 ? 'Khẩn' : undefined, badgeVariant: 'red' },

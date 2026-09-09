@@ -1,7 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useAppState } from '@/lib/state-context'
+import { ConversionDiagnostic } from '@/lib/types'
+import {
+  buildCompetitorInsight,
+  buildConversionDiagnostic,
+  computeConversionDiagnostics,
+  keywordBattleAction,
+} from '@/lib/cro-engine'
 import {
   AlertCircle,
   ArrowUpRight,
@@ -25,13 +32,52 @@ import {
 } from 'lucide-react'
 
 export function BrandIntelligenceView() {
-  const { competitorReverseAsins, conversionDiagnostics } = useAppState()
+  const { competitorReverseAsins, conversionDiagnostics, products, inventory, createTask, setActiveTab: setGlobalTab } = useAppState()
   const [activeTab, setActiveTab] = useState<'reverseasin' | 'diagnostics'>('reverseasin')
   const [selectedCompId, setSelectedCompId] = useState<string>('comp-lindt-01')
 
   const activeComp = competitorReverseAsins.find((c) => c.id === selectedCompId) || competitorReverseAsins[0]
-  // Sprint audit: tiềm năng uplift tính TỪ dữ liệu diagnostics (trước đây hardcode +$7,460)
-  const totalUpliftMonthly = conversionDiagnostics.reduce((sum, d) => sum + (d.estimatedRevenueUpliftMonthly || 0), 0)
+
+  // Sprint audit: chẩn đoán TÍNH TỪ ENGINE (lib/cro-engine.ts) từ 3 nguồn:
+  //  (1) chỉ số phiên SP-API Business (SIMULATED) trong state,
+  //  (2) giá bán từ products, (3) velocity từ inventory.
+  // Trước đây: +$4,620/+$2,840, loại nghẽn, toàn bộ câu chẩn đoán đều LƯU SẴN trong mock-data.
+  const scoredDiagnostics = useMemo(
+    () =>
+      computeConversionDiagnostics(
+        conversionDiagnostics,
+        products.map((p) => ({ sku: p.sku, price: p.price })),
+        inventory.map((i) => ({ sku: i.sku, dailyVelocity7d: i.dailyVelocity7d }))
+      ),
+    [conversionDiagnostics, products, inventory]
+  )
+  const totalUpliftMonthly = scoredDiagnostics.reduce((sum, d) => sum + d.estimatedRevenueUpliftMonthly, 0)
+
+  // Sản phẩm nhà ta để so sánh với đối thủ (match theo từ trùng title, vd "chocolate")
+  const ourCompProduct = useMemo(() => {
+    const words = activeComp.productTitle.toLowerCase().split(/[^a-z]+/).filter((w) => w.length > 5)
+    return (
+      products.find((p) => words.some((w) => p.title.toLowerCase().includes(w))) || products[0]
+    )
+  }, [activeComp, products])
+  const strategicInsight = buildCompetitorInsight(activeComp, ourCompProduct)
+
+  const handleCreateCroTask = (diag: ConversionDiagnostic) => {
+    createTask({
+      title: `[CRO] ${diag.sku}: sửa ${diag.bottleneckType.replace(/_/g, ' ')} (Brand Intel Desk)`,
+      description:
+        `${diag.diagnosisTitleVi}\n\n${diag.diagnosisDetailVi}\n\n` +
+        `👉 Hành động: ${diag.suggestedActionVi}\n\n` +
+        `Kỳ vọng: +$${diag.estimatedRevenueUpliftMonthly.toLocaleString()} doanh thu/tháng ` +
+        `(engine tính từ velocity × giá × khoảng trống tới benchmark).`,
+      priority: 'HIGH',
+      status: 'OPEN',
+      assignedTo: 'Trần Thu Hà (Content, CRO & CS)',
+      assignedRole: 'BRAND_CS_SPECIALIST',
+      source: 'AI_LISTING_AGENT',
+      linkedEntity: { type: 'LISTING', id: diag.sku, name: diag.title },
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -91,7 +137,7 @@ export function BrandIntelligenceView() {
           <Percent size={16} />
           <span>Traffic & Conversion Diagnostics</span>
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-            {conversionDiagnostics.length} Cần tối ưu
+            {scoredDiagnostics.length} Cần tối ưu
           </span>
         </button>
       </div>
@@ -99,6 +145,16 @@ export function BrandIntelligenceView() {
       {/* TAB 1: REVERSE ASIN COMPETITOR RADAR */}
       {activeTab === 'reverseasin' && (
         <div className="space-y-6">
+          {/* Sprint audit: minh bạch nguồn dữ liệu market (trước đây nhìn như số thật) */}
+          <div className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />
+            <div>
+              <strong>Nguồn dữ liệu MARKET đang là MẪU (SIMULATED):</strong> BSR, đơn/tháng, rank từ khóa của đối thủ
+              cần Amazon Brand Analytics hoặc API bên thứ 3 (Helium10/DataDweomer) để chuyển LIVE — hệ thống chưa có
+              kết nối này. Cấu trúc bảng & logic đề xuất đã sẵn sàng nhận dữ liệu thật.
+            </div>
+          </div>
+
           {/* Competitor Selector */}
           <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-slate-200">
             <span className="text-xs font-bold text-slate-700">Chọn đối thủ theo dõi:</span>
@@ -184,9 +240,26 @@ export function BrandIntelligenceView() {
                           </span>
                         </td>
                         <td className="p-3 text-right">
-                          <button className="rounded-lg bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700 hover:bg-purple-100">
-                            Tăng thầu Exact để vượt rank
-                          </button>
+                          {(() => {
+                            // Sprint audit: hành động theo RULE rank/volume (trước đây 1 câu lặp cho mọi dòng,
+                            // kể cả dòng ta đang THẮNG rank); bấm nhảy sang PPC Growth để thực thi
+                            const act = keywordBattleAction(kw)
+                            return (
+                              <button
+                                onClick={() => setGlobalTab('ppc')}
+                                title="Mở không gian PPC Growth để thực hiện"
+                                className={`rounded-lg px-2.5 py-1 text-[11px] font-bold ${
+                                  act.weWin
+                                    ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                    : act.urgency === 'ATTACK'
+                                    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                              >
+                                {act.label}
+                              </button>
+                            )
+                          })()}
                         </td>
                       </tr>
                     ))}
@@ -199,8 +272,8 @@ export function BrandIntelligenceView() {
             <div className="rounded-xl bg-purple-50 p-4 border border-purple-200 flex items-start gap-3">
               <Sparkles size={18} className="text-purple-700 shrink-0 mt-0.5" />
               <div className="text-xs text-purple-950 space-y-1">
-                <div className="font-bold">Nhận định Chiến lược Tấn công Thị trường:</div>
-                <p className="leading-relaxed">{activeComp.pricingStrategyInsight}</p>
+                <div className="font-bold">Nhận định Chiến lược Tấn công Thị trường (sinh tự động từ dữ liệu):</div>
+                <p className="leading-relaxed">{strategicInsight}</p>
               </div>
             </div>
           </div>
@@ -213,12 +286,21 @@ export function BrandIntelligenceView() {
           <div className="bg-white p-5 rounded-xl border border-slate-200">
             <h2 className="text-sm font-bold text-slate-900 mb-1">Chẩn đoán Điểm Nghẽn Phễu Chuyển Đổi (Conversion Funnel Bottlenecks)</h2>
             <p className="text-xs text-slate-500">
-              AI phân tích tương quan giữa Lượt nhấp (CTR) và Tỷ lệ chuyển đổi đơn hàng (CVR) để chỉ ra chính xác lý do vì sao khách xem hàng nhưng không bấm nút &quot;Buy Now&quot;.
+              Engine phân tích tương quan giữa Lượt nhấp (CTR) và Tỷ lệ chuyển đổi (CVR) để chỉ ra vì sao khách xem
+              hàng nhưng không bấm &quot;Buy Now&quot;. Sessions &amp; doanh thu tăng thêm được TÍNH TỪ velocity tồn kho × giá ×
+              khoảng trống benchmark (không lưu sẵn); SKU đạt chuẩn không xuất hiện ở đây.
             </p>
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-900">
+              <AlertCircle size={13} className="mt-0.5 shrink-0 text-amber-600" />
+              <span>
+                <strong>Đầu vào CTR/CVR/bounce là chỉ số SP-API Business ở chế độ MÔ PHỎNG</strong> (chưa có credentials
+                Amazon) — khi kết nối LIVE, số phiên &amp; uplift sẽ tự cập nhật theo hiệu suất thật.
+              </span>
+            </div>
           </div>
 
           <div className="grid gap-4">
-            {conversionDiagnostics.map((diag) => (
+            {scoredDiagnostics.map((diag) => (
               <div key={diag.sku} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs space-y-4">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-100">
                   <div className="space-y-1">
@@ -268,11 +350,15 @@ export function BrandIntelligenceView() {
                     <span>{diag.diagnosisTitleVi}</span>
                   </div>
                   <p className="text-slate-700 leading-relaxed">{diag.diagnosisDetailVi}</p>
-                  <div className="pt-2 border-t border-amber-200/80 flex items-center justify-between">
+                  <div className="pt-2 border-t border-amber-200/80 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
                     <span className="font-semibold text-emerald-900">
                       👉 Giải pháp: {diag.suggestedActionVi}
                     </span>
-                    <button className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700">
+                    <button
+                      onClick={() => handleCreateCroTask(diag)}
+                      title="Tạo task HIGH priority giao Content & CRO, hiện trong mục Nhiệm Vụ Content & CS"
+                      className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-indigo-700"
+                    >
                       Tạo Task cho Designer
                     </button>
                   </div>

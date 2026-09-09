@@ -30,7 +30,7 @@ import {
   DynamicLeadTimeRoute,
   GeoFbaPlacementOption,
   CompetitorReverseAsin,
-  ConversionDiagnostic,
+  CroMetricInput,
   PoaDocument,
   TrademarkWatch,
   TeamMember,
@@ -64,7 +64,7 @@ import {
   mockDynamicLeadTimeRoutes,
   mockGeoFbaPlacements,
   mockCompetitorReverseAsins,
-  mockConversionDiagnostics,
+  mockCroMetricInputs,
   mockPoaDocuments,
   mockTrademarkWatches,
   mockTeamMembers,
@@ -151,7 +151,7 @@ interface AppStateContextType {
   dynamicLeadTimeRoutes: DynamicLeadTimeRoute[]
   geoFbaPlacements: GeoFbaPlacementOption[]
   competitorReverseAsins: CompetitorReverseAsin[]
-  conversionDiagnostics: ConversionDiagnostic[]
+  conversionDiagnostics: CroMetricInput[]
   poaDocuments: PoaDocument[]
   trademarkWatches: TrademarkWatch[]
   teamMembers: TeamMember[]
@@ -318,7 +318,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [dynamicLeadTimeRoutes, setDynamicLeadTimeRoutes] = useState<DynamicLeadTimeRoute[]>(mockDynamicLeadTimeRoutes)
   const [geoFbaPlacements, setGeoFbaPlacements] = useState<GeoFbaPlacementOption[]>(mockGeoFbaPlacements)
   const [competitorReverseAsins, setCompetitorReverseAsins] = useState<CompetitorReverseAsin[]>(mockCompetitorReverseAsins)
-  const [conversionDiagnostics, setConversionDiagnostics] = useState<ConversionDiagnostic[]>(mockConversionDiagnostics)
+  const [conversionDiagnostics, setConversionDiagnostics] = useState<CroMetricInput[]>(mockCroMetricInputs)
   const [poaDocuments, setPoaDocuments] = useState<PoaDocument[]>(() => loadFromStorage('vexim_poa_docs', mockPoaDocuments))
   const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => loadFromStorage('vexim_team_members', mockTeamMembers))
