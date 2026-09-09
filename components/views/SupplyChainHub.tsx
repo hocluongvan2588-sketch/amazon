@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { VeximBookingConfirmationModal } from "@/components/modals/VeximBookingConfirmationModal"
+import { ThreePlDispatchModal } from "@/components/modals/ThreePlDispatchModal"
 import { useAppState } from '@/lib/state-context'
 import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
 import { DEFAULT_RATE_CARDS, calculateFullLandedCost, calculateCbm, calculateVolumetricWeight } from '@/lib/logistics-engine'
@@ -44,6 +45,8 @@ export function SupplyChainHub() {
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
   const [selectedItemForBooking, setSelectedItemForBooking] = useState<any>(null)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
+  const [selected3plItem, setSelected3plItem] = useState<any>(null)
+  const [isThreePlModalOpen, setIsThreePlModalOpen] = useState(false)
 
   // Landed Cost & CBM Calculator Form State (Fully Interactive Dynamic Engine)
   const [selectedProdId, setSelectedProdId] = useState<string>(products[0]?.id || '')
@@ -888,33 +891,161 @@ export function SupplyChainHub() {
         </div>
       )}
 
-      {/* TAB 3: 3PL BUFFER */}
+      {/* TAB 3: 3PL BUFFER & FBA INJECTION DISPATCH */}
       {activeTab === 'buffer3pl' && (
-        <div className="space-y-4">
-          <div className="bg-white p-5 rounded-xl border border-slate-200">
-            <h2 className="text-sm font-bold text-slate-900 mb-1">Mô hình Kho đệm 3PL California + Châm hàng FBA JIT</h2>
-            <p className="text-xs text-slate-500">
-              Giải pháp tối ưu cho doanh nghiệp Việt: Nhập container 40ft vào kho 3PL ngoại quan tại California với giá lưu kho rẻ, sau đó định kỳ châm từng pallet vào kho Amazon FBA để né phí lưu kho phạt quá hạn (Aged Inventory Surcharge).
-            </p>
+        <div className="space-y-5">
+          {/* Top Banner */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Hệ Thống Quản Lý Tồn Kho 3PL California & Cơ Chế Bắn Lệnh Châm Hàng FBA JIT
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Quản lý tồn kho 2 tầng (2-Tier Inventory Ledger): Lưu trữ container tại kho đệm 3PL ngoại quan ở Chino/Ontario (CA) với chi phí thấp ($0.45/pallet/ngày), kết hợp cơ chế bắn lệnh xuất kho tự động (Auto-Dispatch Email / API / Portal 1-Click) để châm hàng vào FBA trong 24h khi FBA chạm ngưỡng an toàn.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="rounded-xl bg-indigo-50 text-indigo-900 border border-indigo-200 px-3 py-1.5 text-xs font-bold font-mono">
+                California Hub: Chino &bull; Ontario &bull; Westminster
+              </span>
+            </div>
           </div>
 
+          {/* 3 Metric Cards */}
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
-              <div className="text-xs font-bold uppercase font-mono text-slate-400">Tồn kho 3PL Buffer (California)</div>
-              <div className="text-2xl font-black text-slate-900">4,200 <span className="text-xs font-medium text-slate-500">units</span></div>
-              <p className="text-xs text-slate-500">Chi phí lưu kho 3PL: $0.45/pallet/ngày (Rẻ hơn 65% so với Amazon Q4 storage).</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-2 shadow-xs">
+              <div className="text-[11px] font-bold uppercase font-mono text-slate-400">Tổng Tồn Kho 3PL Buffer (Mỹ)</div>
+              <div className="text-3xl font-black text-slate-900">4,200 <span className="text-sm font-medium text-slate-500">units</span></div>
+              <p className="text-xs text-slate-500">Phí lưu kho 3PL: $0.45/pallet/ngày (Tiết kiệm 65% so với phí lưu kho quá hạn FBA).</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
-              <div className="text-xs font-bold uppercase font-mono text-slate-400">Tồn kho Active FBA</div>
-              <div className="text-2xl font-black text-indigo-700">1,820 <span className="text-xs font-medium text-slate-500">units</span></div>
-              <p className="text-xs text-slate-500">Đủ bán trong 22.4 ngày theo tốc độ hiện tại, điểm sức khỏe tồn IPI đạt 680.</p>
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5 space-y-2 shadow-xs">
+              <div className="text-[11px] font-bold uppercase font-mono text-indigo-600">Tồn Kho Active FBA (Kho Amazon)</div>
+              <div className="text-3xl font-black text-indigo-700">1,820 <span className="text-sm font-medium text-slate-500">units</span></div>
+              <p className="text-xs text-indigo-900">Đủ bán trong 22.4 ngày theo tốc độ hiện tại, chỉ số sức khỏe lưu kho IPI đạt 680.</p>
             </div>
 
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-5 space-y-3">
-              <div className="text-xs font-bold uppercase font-mono text-emerald-700">Lệnh châm hàng tự động (JIT Trigger)</div>
-              <div className="text-2xl font-black text-emerald-700">7 ngày nữa</div>
-              <p className="text-xs text-emerald-800">Hệ thống sẽ tự động tạo Shipment 800 units từ kho 3PL sang kho ONT8 khi FBA còn 14 ngày tồn.</p>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 space-y-2 shadow-xs">
+              <div className="text-[11px] font-bold uppercase font-mono text-emerald-700">Tổng Số Ngày Tồn Kho Toàn Chuỗi (Total DOS)</div>
+              <div className="text-3xl font-black text-emerald-700">74.2 <span className="text-sm font-medium text-slate-500">ngày</span></div>
+              <p className="text-xs text-emerald-800">FBA (22.4d) + 3PL California (51.8d) ➔ An toàn tuyệt đối trước biến số chậm tàu.</p>
+            </div>
+          </div>
+
+          {/* 3PL SKU Ledger Table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Boxes size={16} className="text-indigo-600" />
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">
+                  Bảng Kê Tồn Kho Chi Tiết 3PL California & Lệnh Điều Phối Tiếp Viện
+                </h3>
+              </div>
+              <span className="text-[11px] text-slate-500">
+                Tự động kích hoạt Lệnh Châm Hàng khi FBA DOS &le; 14 ngày
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-mono uppercase tracking-wider text-slate-500">
+                    <th className="py-3 px-4">Sản Phẩm & SKU</th>
+                    <th className="py-3 px-3">Tồn Kho 3PL CA</th>
+                    <th className="py-3 px-3">Tồn FBA Amazon</th>
+                    <th className="py-3 px-3">Tốc Độ Bán</th>
+                    <th className="py-3 px-3">FBA DOS</th>
+                    <th className="py-3 px-3">Cảnh Báo Nhắc Xưởng VN</th>
+                    <th className="py-3 px-4 text-right">Thao Tác Điều Phối</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {inventory.map((item) => {
+                    const estimated3plStock = item.sku.includes('VN-COCOA') ? 2400 : item.sku.includes('VN-CASHEW') ? 1200 : 600
+                    const isFbaLow = item.daysOfSupply <= 18
+                    const is3plLow = estimated3plStock <= 800
+
+                    return (
+                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <img src={item.imageUrl} alt={item.title} className="h-9 w-9 rounded-lg object-cover border border-slate-200" />
+                            <div>
+                              <div className="font-bold text-slate-900 line-clamp-1 max-w-xs">{item.title}</div>
+                              <div className="text-[10px] font-mono text-slate-400">SKU: {item.sku}</div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-slate-900 text-sm font-mono">{estimated3plStock.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 block font-sans">units tại Chino Hub</span>
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-indigo-700 text-sm font-mono">{item.fbaAvailable.toLocaleString()}</span>
+                          <span className="text-[10px] text-slate-400 block font-sans">units tại ONT8</span>
+                        </td>
+
+                        <td className="py-3 px-3 font-semibold text-slate-800">
+                          {item.dailyVelocity7d} u/ngày
+                        </td>
+
+                        <td className="py-3 px-3">
+                          <span className={`font-mono font-bold text-xs ${isFbaLow ? 'text-red-600' : 'text-emerald-700'}`}>
+                            {item.daysOfSupply.toFixed(1)} ngày
+                          </span>
+                        </td>
+
+                        <td className="py-3 px-3">
+                          {is3plLow ? (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+                              ⚠️ 3PL Sắp Cạn &rarr; Cần Nhắc Xưởng VN
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-100 text-emerald-800 px-2 py-0.5 text-[10px] font-medium">
+                              🟢 3PL Đủ Bán {(estimated3plStock / Math.max(1, item.dailyVelocity7d)).toFixed(0)} ngày
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {is3plLow && (
+                              <button
+                                onClick={() => {
+                                  showToast(`Đã gửi cảnh báo nhắc xưởng ${item.sku} bắt đầu mẻ sản xuất mới!`, 'info')
+                                }}
+                                className="rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 text-[11px] font-bold text-amber-900 transition-colors"
+                              >
+                                🔔 Nhắc Xưởng SX
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => {
+                                setSelected3plItem({
+                                  ...item,
+                                  recommendedTransferQty: isFbaLow ? 600 : 300,
+                                })
+                                setIsThreePlModalOpen(true)
+                              }}
+                              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition-all cursor-pointer active:scale-[0.98]"
+                            >
+                              <Truck size={13} />
+                              <span>Bắn Lệnh Châm FBA</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -981,6 +1112,16 @@ export function SupplyChainHub() {
         product={selectedProduct}
         allProducts={products}
       />
+      {/* 3PL Dispatch & FBA Injection Modal */}
+      <ThreePlDispatchModal
+        isOpen={isThreePlModalOpen}
+        onClose={() => setIsThreePlModalOpen(false)}
+        item={selected3plItem}
+        onSuccess={(data) => {
+          showToast(`Đã bắn Lệnh Xuất Kho ${data.transferQty} units (${data.fbaShipmentCode}) tới ${data.selected3pl}!`, 'success')
+        }}
+      />
+
       {/* Vexim Booking Confirmation Modal */}
       <VeximBookingConfirmationModal
         isOpen={isBookingModalOpen}
