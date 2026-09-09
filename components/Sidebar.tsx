@@ -154,52 +154,55 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         ]
 
       case 'SUPER_ADMIN':
+        return [
+          {
+            title: 'BÀN ĐIỀU HÀNH TỔNG GIÁM ĐỐC (EXECUTIVE)',
+            items: [
+              { id: 'overview', label: 'Executive Dashboard & P&L', icon: LayoutDashboard },
+              { id: 'master-admin', label: 'Quản Trị Nhân Sự & Cấp Quyền', icon: Crown, badge: 'Master', badgeVariant: 'purple' },
+              { id: 'supplier-portal', label: 'Danh Mục Nhà Xưởng & P&L', icon: ShieldCheck, badge: 'Clients', badgeVariant: 'green' },
+              { id: 'vexim-kpis', label: 'Chỉ Số Hiệu Suất Toàn Cơ Quan', icon: Activity },
+              { id: 'ai-efficiency', label: 'Chi Phí Hạ Tầng AI ($1.42)', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
+              { id: 'audit-log', label: 'Nhật Ký Kiểm Toán (Audit Trail)', icon: History },
+              { id: 'user-profile', label: 'Tài Khoản Cá Nhân & Mật Khẩu', icon: User },
+            ],
+          },
+          {
+            title: 'CHẾ ĐỘ THANH TRA CHUYÊN MÔN (AUDIT DRILL-DOWN)',
+            items: [
+              { id: 'supply-chain-hub', label: 'Soi Tiến Độ Kho & Hải Quan', icon: Ship },
+              { id: 'ppc-growth-desk', label: 'Soi Hiệu Quả Quảng Cáo PPC', icon: Zap },
+              { id: 'compliance-ops-desk', label: 'Soi Pháp Lý & Sức Khỏe TK', icon: Gavel },
+              { id: 'brand-intelligence', label: 'Soi Thị Phần & Listing CRO', icon: Target },
+            ],
+          },
+        ]
+
       case 'OPS_MANAGER':
       case 'ACCOUNT_EXECUTIVE':
       default:
         return [
           {
-            title: 'QUẢN TRỊ CẤP CAO (MASTER CONTROL)',
+            title: 'BÀN QUẢN LÝ VẬN HÀNH (OPS DESK)',
             items: [
-              { id: 'master-admin', label: 'Quản Trị, Cấp Quyền & P&L', icon: Crown, badge: 'Master', badgeVariant: 'purple' },
-              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
-              { id: 'ai-efficiency', label: 'Tối Ưu Chi Phí AI ($1.42)', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
-              { id: 'vexim-kpis', label: 'Hiệu Suất Vexim Agency', icon: Activity },
-            ],
-          },
-          {
-            title: 'CÁC DESK CHUYÊN SÂU (DEEP-TECH)',
-            items: [
-              { id: 'ppc-growth-desk', label: 'PPC & Growth Desk', icon: Zap, badge: pendingHarvest > 0 ? pendingHarvest : undefined, badgeVariant: 'purple' },
-              { id: 'supply-chain-hub', label: 'Supply Chain & Geo-FBA', icon: Ship, badge: 'JIT', badgeVariant: 'blue' },
-              { id: 'brand-intelligence', label: 'Brand Intel & CRO', icon: Target },
-              { id: 'compliance-ops-desk', label: 'Legal & Soạn Đơn POA', icon: Gavel, badge: 'POA', badgeVariant: 'red' },
-              { id: 'supplier-portal', label: 'Supplier Executive Portal', icon: ShieldCheck, badge: 'Client', badgeVariant: 'green' },
-            ],
-          },
-          {
-            title: 'AI CORE & VẬN HÀNH CHÍNH',
-            items: [
+              { id: 'overview', label: 'Tổng Quan Vận Hành', icon: LayoutDashboard },
               { id: 'ai-operations', label: 'AI Operations Center', icon: Sparkles, badge: pendingApprovals > 0 ? pendingApprovals : undefined, badgeVariant: 'red' },
-              { id: 'overview', label: 'Tổng quan Amazon', icon: LayoutDashboard },
-              { id: 'sales-analyst', label: 'AI Sales Analyst', icon: TrendingUp },
-              { id: 'products', label: 'Sản phẩm & Launch', icon: Rocket },
-              { id: 'listings', label: 'Tối ưu Listing', icon: Package },
-              { id: 'inventory', label: 'Tồn kho FBA', icon: Boxes, badge: 'Cần nhập', badgeVariant: 'amber' },
-              { id: 'orders', label: 'Đơn hàng & FBA', icon: PackageCheck },
-              { id: 'customers', label: 'Chăm sóc Khách hàng', icon: MessageSquareWarning, badge: criticalSafetyMessages > 0 ? 'Khẩn' : undefined, badgeVariant: 'red' },
-              { id: 'ppc', label: 'Quảng cáo PPC', icon: Megaphone },
-              { id: 'promotions', label: 'Khuyến mãi & Deals', icon: Flame },
-              { id: 'account-health', label: 'Sức khỏe Tài khoản', icon: HeartPulse, badge: openHealthIssues > 0 ? openHealthIssues : undefined, badgeVariant: 'amber' },
+              { id: 'tasks', label: 'Giao Việc & Tiến Độ', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
+              { id: 'supplier-portal', label: 'Cổng Khách Hàng', icon: ShieldCheck },
+              { id: 'reports', label: 'Báo Cáo Hiệu Suất', icon: FileText },
+              { id: 'user-profile', label: 'Thông Tin Cá Nhân & MK', icon: User },
             ],
           },
           {
-            title: 'QUẢN TRỊ & GOVERNANCE',
+            title: 'PHÂN HỆ CHUYÊN SÂU',
             items: [
-              { id: 'tasks', label: 'Task Vận hành', icon: CheckSquare, badge: openTasksCount > 0 ? openTasksCount : undefined, badgeVariant: 'blue' },
-              { id: 'reports', label: 'Báo cáo Hiệu suất', icon: FileText },
-              { id: 'sync-center', label: 'SP-API Connector', icon: RefreshCw },
-              { id: 'audit-log', label: 'Nhật ký Kiểm toán', icon: History },
+              { id: 'supply-chain-hub', label: 'Supply Chain & Geo-FBA', icon: Ship },
+              { id: 'ppc-growth-desk', label: 'PPC Growth Desk', icon: Zap },
+              { id: 'brand-intelligence', label: 'Brand Intel & CRO', icon: Target },
+              { id: 'compliance-ops-desk', label: 'Legal & Soạn Đơn POA', icon: Gavel },
+              { id: 'products', label: 'Sản Phẩm & Tiếp Nhận', icon: Rocket },
+              { id: 'inventory', label: 'Tồn Kho FBA & 3PL', icon: Boxes },
+              { id: 'account-health', label: 'Sức Khỏe Gian Hàng', icon: HeartPulse },
             ],
           },
         ]

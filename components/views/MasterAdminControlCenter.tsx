@@ -385,20 +385,31 @@ export function MasterAdminControlCenter() {
       {/* SUB-TAB 3: HIGH-RISK APPROVAL QUEUE & MASTER AUDIT TRAIL */}
       {activeSubTab === 'approvals-audit' && (
         <div className="space-y-6">
+          {/* Executive Delegation Banner */}
+          <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 space-y-2">
+            <div className="flex items-center gap-2 text-blue-900 font-bold text-sm">
+              <ShieldCheck size={18} className="text-blue-600" />
+              <span>Nguyên Tắc Phân Quyền Phê Duyệt Cấp Lãnh Đạo (Executive Governance Model)</span>
+            </div>
+            <p className="text-xs text-blue-800 leading-relaxed">
+              <strong>Super Admin (Tổng Giám Đốc)</strong> chỉ phê duyệt các quyết định chiến lược cấp vĩ mô (Hợp đồng Nhà xưởng mới, Thay đổi Ngân hàng rút tiền, Cấp quyền nhân sự). Các lệnh tác vụ chuyên môn vi mô (Tăng/giảm Bid PPC, Duyệt nội dung Listing, Lịch châm kho 3PL, Kháng cáo FDA) đã được <strong>ủy quyền hoàn toàn cho 4 Trưởng Bộ Phận</strong> xử lý độc lập và tự động ghi vết vào Nhật ký Kiểm toán dưới đây.
+            </p>
+          </div>
+
           {/* High-Risk Approvals */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div>
                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldAlert size={18} className="text-red-600" />
-                  <span>Hàng Đợi Phê Duyệt Cấp Lãnh Đạo (Master High-Risk Queue)</span>
+                  <ShieldAlert size={18} className="text-purple-600" />
+                  <span>Hàng Đợi Quyết Định Chiến Lược & Ủy Quyền Chuyên Môn</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Các hành động nhạy cảm đòi hỏi chữ ký điện tử của Super Admin trước khi được gửi lên Amazon SP-API.
+                  Theo dõi các đề xuất AI và các lệnh đang được Trưởng bộ phận chuyên trách thẩm định trước khi bắn lệnh SP-API.
                 </p>
               </div>
-              <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800">
-                {highRiskApprovals.length} Lệnh chờ duyệt
+              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-800">
+                {highRiskApprovals.length} Lệnh Chuyên Môn Đang Điều Phối
               </span>
             </div>
 
@@ -418,8 +429,14 @@ export function MasterAdminControlCenter() {
                         <span className="font-bold text-sm text-slate-900">{rec.title}</span>
                       </div>
                       <p className="text-xs text-slate-600">{rec.description}</p>
-                      <div className="text-[11px] text-slate-500">
-                        Gian hàng: <strong>{rec.clientName}</strong> &bull; Hành động: <strong>{rec.proposedAction}</strong>
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-1">
+                        <span>Gian hàng: <strong className="text-slate-800">{rec.clientName}</strong></span>
+                        <span>&bull;</span>
+                        <span>Hành động: <strong className="text-slate-800">{rec.proposedAction}</strong></span>
+                        <span>&bull;</span>
+                        <span className="rounded bg-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-800">
+                          Người phụ trách: {rec.impactCategory === 'FINANCIAL' || rec.title.includes('bid') ? 'Lương Hoàng Minh (PPC Lead)' : rec.impactCategory === 'OPERATIONAL' || rec.title.includes('Listing') ? 'Trần Thu Hà (Brand Lead)' : rec.impactCategory === 'LEGAL' || rec.title.includes('Dị Ứng') ? 'Lê Hoàng Nam (Legal Lead)' : 'Nguyễn Tuấn Anh (Ops Manager)'}
+                        </span>
                       </div>
                     </div>
 
@@ -433,8 +450,9 @@ export function MasterAdminControlCenter() {
                       <button
                         onClick={() => approveRecommendation(rec.id)}
                         className="rounded-lg bg-purple-700 px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-purple-800"
+                        title="Duyệt ủy quyền thực thi"
                       >
-                        Ký Duyệt & Thực Thi
+                        Duyệt Lệnh
                       </button>
                     </div>
                   </div>
