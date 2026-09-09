@@ -32,11 +32,6 @@ import {
   PoaDocument,
   TrademarkWatch,
   TeamMember,
-  ReverseLogisticsItem,
-  DemurrageTrackingRecord,
-  FbaCapacityUsage,
-  EtaDeviationAlert,
-  SpApiQueueStatus,
 } from './types'
 import {
   mockAccountHealth,
@@ -66,11 +61,6 @@ import {
   mockPoaDocuments,
   mockTrademarkWatches,
   mockTeamMembers,
-  mockReverseLogisticsItems,
-  mockDemurrageRecords,
-  mockFbaCapacityUsages,
-  mockEtaDeviationAlerts,
-  mockSpApiQueueStatus,
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
@@ -217,18 +207,6 @@ interface AppStateContextType {
     etaFba: string
   }) => void
 
-  // 5 Critical Operations Extension
-  reverseLogisticsItems: ReverseLogisticsItem[]
-  demurrageRecords: DemurrageTrackingRecord[]
-  fbaCapacityUsages: FbaCapacityUsage[]
-  etaDeviationAlerts: EtaDeviationAlert[]
-  spApiQueueStatuses: SpApiQueueStatus[]
-  triggerAutoRemovalOrder: (sku: string) => void
-  gradeAndRelabelItem: (id: string, grade: 'GRADE_A_NEW' | 'GRADE_B_LIQUIDATE' | 'GRADE_C_SCRAP', notes: string) => void
-  dispatchDrayagePull: (containerId: string) => void
-  submitCapacityBid: (storageType: 'STANDARD_SIZE' | 'OVERSIZE' | 'APPAREL', extraCuFt: number, bidPrice: number) => void
-  simulateEtaDeviation: (shipmentId: string, daysLate: number) => void
-
   // UI state
   isScanning: boolean
   isSyncing: boolean
@@ -314,13 +292,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => loadFromStorage('vexim_team_members', mockTeamMembers))
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => loadFromStorage('vexim_auth', true))
   const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage('vexim_notifications', mockNotifications))
-
-  // 5 Critical Operations Extension States
-  const [reverseLogisticsItems, setReverseLogisticsItems] = useState<ReverseLogisticsItem[]>(mockReverseLogisticsItems)
-  const [demurrageRecords, setDemurrageRecords] = useState<DemurrageTrackingRecord[]>(mockDemurrageRecords)
-  const [fbaCapacityUsages, setFbaCapacityUsages] = useState<FbaCapacityUsage[]>(mockFbaCapacityUsages)
-  const [etaDeviationAlerts, setEtaDeviationAlerts] = useState<EtaDeviationAlert[]>(mockEtaDeviationAlerts)
-  const [spApiQueueStatuses, setSpApiQueueStatuses] = useState<SpApiQueueStatus[]>(mockSpApiQueueStatus)
 
   // Ephemeral UI states
   const [isScanning, setIsScanning] = useState(false)
@@ -1244,155 +1215,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Đã gửi hồ sơ giải trình Plan of Action (POA) lên Amazon Seller Performance!', 'success')
   }
 
-  // ====================================================================
-  // 5 CRITICAL OPERATIONS EXTENSION HANDLERS
-  // ====================================================================
-
-  const triggerAutoRemovalOrder = (sku: string) => {
-    const removalId = `REM-AUTO-${Date.now().toString().slice(-6)}`
-    const targetItem = inventory.find((i) => i.sku === sku)
-    
-    const newRevItem: ReverseLogisticsItem = {
-      id: `rev-${Date.now()}`,
-      clientId: targetItem?.clientId || 'client-vina-01',
-      sku: sku,
-      asin: targetItem?.asin || 'B0C7XYZ890',
-      title: targetItem?.title || 'Sản phẩm hoàn về từ kho Amazon FBA',
-      imageUrl: targetItem?.imageUrl || 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&q=80&w=300',
-      unitsReturned: 24,
-      returnReason: 'PACKAGING_TORN',
-      fbaWarehouseOrigin: 'ONT8 (California)',
-      removalOrderId: removalId,
-      status: 'TRANSIT_TO_3PL',
-      estimatedValueRecoveryUsd: 650,
-      relabelCostUsd: 8.4,
-      updatedAt: new Date().toISOString(),
-    }
-
-    setReverseLogisticsItems((prev) => [newRevItem, ...prev])
-
-    addNotification({
-      title: `📦 TỰ ĐỘNG RÚT HÀNG: Lệnh Auto-Removal ${removalId} cho SKU ${sku}`,
-      description: `Rút 24 units Unsellable từ kho ONT8 về kho đệm 3PL Chino (California) để tránh Amazon tiêu hủy.`,
-      type: 'LOGISTICS',
-      priority: 'HIGH',
-      timestamp: 'Vừa xong',
-      targetRoles: ['SUPPLY_CHAIN_SPECIALIST', 'OPS_MANAGER'],
-      targetTab: 'supply-chain-hub',
-    })
-
-    showToast(`Đã tạo lệnh Auto-Removal ${removalId} rút 24 units về kho 3PL California!`, 'success')
-  }
-
-  const gradeAndRelabelItem = (id: string, grade: 'GRADE_A_NEW' | 'GRADE_B_LIQUIDATE' | 'GRADE_C_SCRAP', notes: string) => {
-    setReverseLogisticsItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item
-        const newStatus = grade === 'GRADE_A_NEW' ? 'RE_INJECTED_FBA' : grade === 'GRADE_B_LIQUIDATE' ? 'LIQUIDATED' : 'SCRAPPED'
-        return {
-          ...item,
-          grade,
-          status: newStatus,
-          inspectionNotes: notes,
-          recycledIntoFbaShipmentId: grade === 'GRADE_A_NEW' ? `FBA18-RELBL-${Math.floor(1000 + Math.random() * 9000)}` : undefined,
-          updatedAt: new Date().toISOString(),
-        }
-      })
-    )
-
-    showToast(`Đã hoàn tất kiểm định ${grade}: Khôi phục giá trị sản phẩm thành công!`, 'success')
-  }
-
-  const dispatchDrayagePull = (containerId: string) => {
-    setDemurrageRecords((prev) =>
-      prev.map((rec) => {
-        if (rec.id !== containerId) return rec
-        return {
-          ...rec,
-          gateOutStatus: 'PULLED_TO_3PL',
-          riskLevel: 'SAFE',
-          remainingFreeHours: 0,
-        }
-      })
-    )
-
-    addNotification({
-      title: `⚡ CỨU PHÍ CẢNG: Xe Drayage đã kéo Container ra khỏi bãi Cảng LAX!`,
-      description: `Container đã an toàn trên đường về kho 3PL Chino. Tiết kiệm ước tính $675 phí phạt Demurrage quá hạn.`,
-      type: 'LOGISTICS',
-      priority: 'HIGH',
-      timestamp: 'Vừa xong',
-      targetRoles: ['SUPPLY_CHAIN_SPECIALIST', 'OPS_MANAGER'],
-      targetTab: 'supply-chain-hub',
-    })
-
-    showToast(`Xe Drayage đã kéo Container thành công về kho 3PL, né 100% phí phạt Demurrage!`, 'success')
-  }
-
-  const submitCapacityBid = (storageType: 'STANDARD_SIZE' | 'OVERSIZE' | 'APPAREL', extraCuFt: number, bidPrice: number) => {
-    setFbaCapacityUsages((prev) =>
-      prev.map((cap) => {
-        if (cap.storageType !== storageType) return cap
-        return {
-          ...cap,
-          biddingStatus: 'BID_SUBMITTED',
-          requestedExtraCubicFeet: extraCuFt,
-          bidPricePerCubicFeet: bidPrice,
-          estimatedReservationFeeUsd: extraCuFt * bidPrice,
-        }
-      })
-    )
-
-    addNotification({
-      title: `📊 ĐẤU GIÁ DUNG LƯỢNG FBA: Đã nộp đề xuất xin thêm +${extraCuFt} ft³ (${storageType})`,
-      description: `Giá bid: $${bidPrice}/ft³. Hạn ngạch dự kiến được cấp phát vào chu kỳ thứ Hai tuần tới.`,
-      type: 'LOGISTICS',
-      priority: 'MEDIUM',
-      timestamp: 'Vừa xong',
-      targetRoles: ['SUPPLY_CHAIN_SPECIALIST', 'OPS_MANAGER'],
-      targetTab: 'supply-chain-hub',
-    })
-
-    showToast(`Đã nộp đơn đấu giá xin thêm +${extraCuFt} ft³ dung lượng kho FBA mùa Q4!`, 'success')
-  }
-
-  const simulateEtaDeviation = (shipmentId: string, daysLate: number) => {
-    const updatedEta = new Date(Date.now() + (daysLate + 4) * 86400000).toLocaleDateString('vi-VN')
-    
-    setEtaDeviationAlerts((prev) => [
-      {
-        id: `eta-alert-${Date.now()}`,
-        shipmentId,
-        trackingNumber: 'KRY-VNM-LAX-8801',
-        carrierName: 'Kerry Ocean LCL',
-        vesselName: 'CMA CGM Palais Royal',
-        originalEta: '15/09/2026',
-        updatedEta: updatedEta,
-        deviationDays: daysLate,
-        affectedSkus: ['VN-COCOA-ORGANIC-500G'],
-        automaticActionTriggered: daysLate >= 3 ? 'PPC_THROTTLED_30' : 'NONE',
-        status: 'ACTIVE_INTERVENTION',
-        createdAt: new Date().toISOString(),
-      },
-      ...prev,
-    ])
-
-    if (daysLate >= 3) {
-      addNotification({
-        title: `⚠️ TÀU CHẬM +${daysLate} NGÀY: Kích hoạt Kịch bản Bảo vệ Tồn kho Khẩn cấp!`,
-        description: `Tàu CMA CGM trễ lịch cập cảng LAX ➔ Tự động hạ 30% giá thầu PPC để phanh nhịp bán và điều lệnh châm từ 3PL.`,
-        type: 'LOGISTICS',
-        priority: 'CRITICAL',
-        timestamp: 'Vừa xong',
-        targetRoles: ['SUPPLY_CHAIN_SPECIALIST', 'PPC_SPECIALIST', 'OPS_MANAGER'],
-        targetTab: 'supply-chain-hub',
-      })
-      showToast(`Tàu trễ +${daysLate} ngày ➔ AI đã tự động kích hoạt Throttle hạ 30% bid PPC!`, 'warning')
-    } else {
-      showToast(`Đã ghi nhận cập nhật ETA tàu biển (Độ lệch +${daysLate} ngày).`, 'info')
-    }
-  }
-
   const openModal = (type: string, data?: any) => setActiveModal({ type, data })
   const closeModal = () => setActiveModal(null)
 
@@ -1477,16 +1299,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         submitPoaAppeal,
         submitSupplierReadyNotification,
         confirmShipmentBooking,
-        reverseLogisticsItems,
-        demurrageRecords,
-        fbaCapacityUsages,
-        etaDeviationAlerts,
-        spApiQueueStatuses,
-        triggerAutoRemovalOrder,
-        gradeAndRelabelItem,
-        dispatchDrayagePull,
-        submitCapacityBid,
-        simulateEtaDeviation,
         isScanning,
         isSyncing,
         lastSyncNotice,

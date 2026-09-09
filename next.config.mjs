@@ -6,7 +6,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  allowedDevOrigins: ['*.e2b.app', 'localhost:3000', '127.0.0.1:3000'],
   // Ensure fresh HTML delivery on Vercel Edge while keeping static assets cached
   async headers() {
     return [
