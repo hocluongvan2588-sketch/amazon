@@ -5,6 +5,7 @@ import {
   ClientSupplier,
   FreightRateCard,
   InventoryItem,
+  Order,
   OperationalTask,
   Product,
   TeamMember,
@@ -321,6 +322,46 @@ export class SupabaseDatabaseService {
       })
     } catch (err) {
       console.warn('[Supabase] getInventory catch:', err)
+      return null
+    }
+  }
+
+  /** Đọc đơn hàng từ bảng `orders` (dữ liệu sync thật từ Amazon SP-API). */
+  static async getOrders(): Promise<Order[] | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('purchase_date', { ascending: false })
+        .limit(200)
+      if (error) {
+        console.warn('[Supabase] getOrders error:', error.message)
+        return null
+      }
+      if (!data || data.length === 0) return null
+      return data.map((o: any) => ({
+        id: o.id,
+        amazonOrderId: o.amazon_order_id,
+        clientId: o.client_id,
+        purchaseDate: o.purchase_date,
+        orderStatus: o.order_status,
+        fulfillmentChannel: o.fulfillment_channel === 'FBM' ? 'FBM' : 'FBA',
+        salesChannel: 'Amazon.com',
+        orderTotal: Number(o.order_total || 0),
+        itemCount: o.item_count || 1,
+        customerCity: o.customer_city || '',
+        customerState: o.customer_state || '',
+        customerPostalCode: o.customer_postal_code || '',
+        carrier: o.carrier || undefined,
+        trackingNumber: o.tracking_number || undefined,
+        items: Array.isArray(o.items) ? o.items : [],
+        hasProblem: !!o.has_problem,
+        problemReason: o.problem_reason || undefined,
+        aiProblemDiagnosis: o.ai_problem_diagnosis || undefined,
+      })) as Order[]
+    } catch (err) {
+      console.warn('[Supabase] getOrders catch:', err)
       return null
     }
   }

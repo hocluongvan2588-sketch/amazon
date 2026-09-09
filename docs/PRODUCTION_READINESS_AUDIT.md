@@ -17,9 +17,9 @@
 | 3 | Book Tàu B/L → `inbound_shipments` | 🟢 | Ghi DB thật | Không |
 | 4 | Webhook forwarder → `forwarder_tracking_events` | 🟢 | Lưu DB thật; **đã vá**: production bắt buộc secret khớp (timing-safe) | Không |
 | 5 | AI Copilot `/api/chat` | 🟡 | Route thật; **đã vá** fallback + rate limit 30 câu/phút/IP. Chưa có key → chỉ trả kịch bản mẫu | Cần `AI_GATEWAY_API_KEY` |
-| 6 | **Amazon Orders/Inventory sync** | 🟡 | **MỚI:** `POST /api/amazon/sync` gọi SP-API thật (LWA + AWS SigV4, retry 429/401). Thiếu credentials → `simulated:true`, UI cảnh báo vàng, không còn "giả vờ thành công" | **Cần credentials Amazon (mục 2)** |
-| 7 | **Amazon Ads (PPC) sync** | 🔴 | Ads API là hệ thống riêng (advertising-api.amazon.com, OAuth profile riêng) — **chưa triển khai**; route trả lỗi rõ `ADS_API_NOT_IMPLEMENTED` | Có — giai đoạn sau |
-| 8 | Listings push (PATCH giá/chỉnh sửa) | 🔴 | Chỉ có read-check (GET listing). Patch/feed cần thêm flow submissions + polling | Có — giai đoạn sau |
+| 6 | **Amazon Orders/Inventory sync** | 🟡 | **Giai đoạn 2 hoàn thiện:** LIVE → pull Amazon + **UPSERT thật vào Supabase** (`orders` upsert theo amazon_order_id; `inventory` update fba_available theo SKU có sẵn). Simulated → `simulated:true`, KHÔNG ghi DB. UI có Setup Wizard ở tab Đồng bộ SP-API | **Cần credentials Amazon (mục 2)** |
+| 7 | **Amazon Ads (PPC) sync** | 🟡 | **Giai đoạn 2:** client Ads API thật (`lib/ads-api-server.ts`) — LWA scope riêng + Profile header; đồng bộ campaigns vào `advertising_campaigns`; module `ADS_PROFILES` khám phá Profile ID. Metrics 7 ngày (spend/sales) cần async report — giai đoạn sau | Cần Ads credentials + Profile ID |
+| 8 | Listings push (PATCH giá/chỉnh sửa) | 🔴 | Chỉ có read-check (GET listing). Patch/feed cần thêm flow submissions + polling | Có — giai đoạn 3 |
 | 9 | Multi-tenant RLS | 🟡 | Đang policy demo (anon full access) — chỉ an toàn khi app nội bộ | **Có** khi mở cho người ngoài (SQL thay trong runbook) |
 | 10 | Secrets | 🟡 | Mật khẩu 9 user seed = `Anthai@88`, webhook secret mặc định — **phải đổi trước go-live** | Có |
 
@@ -61,6 +61,19 @@ Browser UI
                              [không key] kịch bản fallback ✅
 Sync Center: ORDERS/INVENTORY → Amazon thật khi LIVE; PERFORMANCE_ADS → báo chưa triển khai (không giả)
 ```
+
+## 4b. Giai đoạn 2 — đã triển khai (2026-09-09)
+
+| Hạng mục | File | Chú thích |
+|---|---|---|
+| Orders → Supabase | `lib/amazon-sync-service.ts` | Pull `/orders/v0` 7 ngày → upsert `orders` (amazon_order_id unique). PII khách (tên/SĐT/địa chỉ) **cố ý không lưu** — cần phê duyệt PII + RDT |
+| Inventory → Supabase | `lib/amazon-sync-service.ts` | `/fba/inventory/v1` → UPDATE `fba_available` cho SKU đã có (không insert SKU lạ) |
+| Ads API client | `lib/ads-api-server.ts` | LWA scope riêng, `ADS_PROFILES` khám phá profile, sync campaigns → `advertising_campaigns` |
+| Setup Wizard | `components/views/AmazonIntegrationSetup.tsx` | Tab Đồng bộ SP-API: trạng thái LIVE/SIMULATED, env còn thiếu, 5 bước đăng ký Amazon, test kết nối thật, copy .env.local |
+| Hydrate orders UI | `lib/supabase-service.ts` + state-context | Đơn hàng hiển thị từ DB (như inventory đã làm) |
+| Env mới | `.env.example` | `AMAZON_ADS_PROFILE_ID`, `AMAZON_ADS_*` override, `AMAZON_SYNC_CLIENT_ID` |
+
+Lưu ý vận hành: simulated mode **không bao giờ ghi DB** — dữ liệu demo trong DB không bao giờ bị kết quả mô phỏng làm bẩn. Chỉ LIVE mới ghi.
 
 ## 5. Checklist go-live cuối (thứ tự thực hiện)
 

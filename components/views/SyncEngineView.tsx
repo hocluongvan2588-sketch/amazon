@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { useAppState } from '@/lib/state-context'
+import { AmazonIntegrationSetup } from './AmazonIntegrationSetup'
 import {
   Activity,
   AlertTriangle,
@@ -24,6 +25,9 @@ export function SyncEngineView() {
 
   return (
     <div className="space-y-6">
+      {/* Giai đoạn 2: Amazon Integration Setup Wizard */}
+      <AmazonIntegrationSetup />
+
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>

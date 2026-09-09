@@ -369,12 +369,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     async function loadLiveSupabaseData() {
       try {
-        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards] = await Promise.all([
+        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards, liveOrders] = await Promise.all([
           SupabaseDatabaseService.getUsers(),
           SupabaseDatabaseService.getClients(),
           SupabaseDatabaseService.getProducts(),
           SupabaseDatabaseService.getInventory(),
           SupabaseDatabaseService.getFreightRateCards(),
+          SupabaseDatabaseService.getOrders(),
         ])
 
         if (!isMounted) return
@@ -402,6 +403,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         }
         if (liveRateCards && liveRateCards.length > 0) {
           setFreightRateCards(liveRateCards)
+        }
+        if (liveOrders && liveOrders.length > 0) {
+          // Đơn hàng: DB là nguồn sự thật (được sync từ Amazon SP-API)
+          setOrders(liveOrders)
+          saveToStorage('vexim_orders', liveOrders)
         }
       } catch (err) {
         console.info('[Vexim State] Running in persistent hybrid mode.')

@@ -16,6 +16,8 @@ const BIZ_TABLES = [
   'users',
   'products',
   'inventory',
+  'orders',
+  'advertising_campaigns',
   'freight_rate_cards',
   'inbound_shipments',
   'forwarder_tracking_events',
