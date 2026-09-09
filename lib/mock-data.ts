@@ -2286,3 +2286,32 @@ export const mockSpApiQueueStatus: SpApiQueueStatus[] = [
     lastSyncTimestamp: new Date().toISOString(),
   },
 ]
+
+// ====================================================================
+// SPRINT 3.1 — PLACEMENT METRICS DEMO (SIMULATED MODE CHO PLACEMENT ENGINE)
+// Số liệu đặt tên campaign khớp mockPpcCampaigns để UI demo tính năng
+// Placement Optimization (Top of Search vs Product Pages).
+// ====================================================================
+export const mockPlacementMetrics: {
+  campaignName: string
+  placement: 'TOP_OF_SEARCH' | 'PRODUCT_PAGES' | 'REST_OF_SEARCH'
+  impressions: number
+  clicks: number
+  spend: number
+  sales: number
+  orders: number
+  currentBoostPct: number
+}[] = [
+  // Campaign 1: ToS hiệu quả vượt trội -> engine sẽ đề xuất BOOST_UP
+  { campaignName: 'SP - Dark Chocolate - Broad', placement: 'TOP_OF_SEARCH', impressions: 18420, clicks: 412, spend: 618.00, sales: 2736.40, orders: 68, currentBoostPct: 25 },
+  { campaignName: 'SP - Dark Chocolate - Broad', placement: 'PRODUCT_PAGES', impressions: 22150, clicks: 388, spend: 542.10, sales: 1084.20, orders: 31, currentBoostPct: 0 },
+  { campaignName: 'SP - Dark Chocolate - Broad', placement: 'REST_OF_SEARCH', impressions: 9320, clicks: 142, spend: 198.80, sales: 496.99, orders: 14, currentBoostPct: 0 },
+  // Campaign 2: ToS ăn tiền (ACOS vượt 1.5x target 25%) -> BOOST_DOWN về 0
+  { campaignName: 'SP - Cocoa Powder - Broad Scale', placement: 'TOP_OF_SEARCH', impressions: 12780, clicks: 296, spend: 592.00, sales: 355.20, orders: 7, currentBoostPct: 40 },
+  { campaignName: 'SP - Cocoa Powder - Broad Scale', placement: 'PRODUCT_PAGES', impressions: 15420, clicks: 244, spend: 390.40, sales: 1042.90, orders: 26, currentBoostPct: 0 },
+  { campaignName: 'SP - Cocoa Powder - Broad Scale', placement: 'REST_OF_SEARCH', impressions: 6890, clicks: 98, spend: 147.00, sales: 294.00, orders: 7, currentBoostPct: 0 },
+  // Campaign 3: ToS ổn định -> HOLD
+  { campaignName: 'SP - Agarwood Incense - Exact Defense', placement: 'TOP_OF_SEARCH', impressions: 8210, clicks: 186, spend: 279.00, sales: 1302.00, orders: 33, currentBoostPct: 15 },
+  { campaignName: 'SP - Agarwood Incense - Exact Defense', placement: 'PRODUCT_PAGES', impressions: 11440, clicks: 172, spend: 258.00, sales: 948.60, orders: 24, currentBoostPct: 0 },
+  { campaignName: 'SP - Agarwood Incense - Exact Defense', placement: 'REST_OF_SEARCH', impressions: 4320, clicks: 64, spend: 92.80, sales: 231.99, orders: 6, currentBoostPct: 0 },
+]

@@ -67,7 +67,23 @@ Amazon không công bố mã nguồn/hash nội bộ của thuật toán tìm ki
 
 ## PHẦN B — LỘ TRÌNH TRIỂN KHAI CHI TIẾT (4 SPRINT)
 
-### Sprint 3.1 — PPC Automation Engine ⭐ ưu tiên cao nhất (~3–4 ngày dev)
+### Sprint 3.1 — PPC Automation Engine ⭐ ✅ HOÀN THÀNH (2026-09-09)
+
+> Đã triển khai + test pass toàn bộ:
+
+| Hạng mục | File | Trạng thái |
+|---|---|---|
+| Thuật toán Bid = Target ACOS × CVR × AOV (guardrail ±20%, floor $0.25, NO_DATA < 10 clicks) | `lib/ppc-intelligence.ts` | ✅ Test: ACOS 88% → hạ −20%; ACOS 17.6% + CVR 26% → tăng +20% (cap) |
+| Auto Negative (min clicks 10–15 theo window, CVR=0 hoặc ACOS>150%, token rác → Phrase) | `lib/ppc-intelligence.ts` | ✅ Test: 4 terms → 2 kiến nghị, tiết kiệm ước tính $129.05 |
+| Placement (ToS vs Product Pages, ROI edge 1.2×, boost cap 50%, ACOS > 1.5× target → về 0) | `lib/ppc-intelligence.ts` | ✅ Test: 3 campaigns → BOOST_UP ×2, BOOST_DOWN ×1 đúng logic |
+| 4 bảng DB + policy demo (defensive, không fail hard) | `supabase/migrations/20260911_ppc_intelligence.sql` | ✅ (cần chạy trong Supabase trước khi LIVE ghi DB) |
+| LIVE report pipeline (create→poll→download gzip) + push bid/negative lên Amazon | `lib/ads-api-server.ts` | ✅ code xong — kích hoạt khi có Ads credentials |
+| POST /api/ppc/optimize (dual-mode, simulated không ghi DB) | `app/api/ppc/optimize/route.ts` | ✅ |
+| POST /api/ppc/approve (human-in-the-loop bulk, LIVE đẩy Amazon) | `app/api/ppc/approve/route.ts` | ✅ |
+| Worker /api/cron/ppc-optimizer (CRON_SECRET, timing-safe, prod thiếu secret → từ chối) | `app/api/cron/ppc-optimizer/route.ts` | ✅ Test full-cycle 3 modules |
+| UI: nút "Bật tự động tối ưu Bid" + "Báo cáo kiến nghị phủ định" (chọn nhiều → duyệt loạt) + Placement cards | `components/views/PpcIntelligencePanel.tsx` | ✅ Gắn ở đầu tab PPC Growth Desk |
+
+### Sprint 3.1 — KẾ HOẠCH GỐC (~3–4 ngày dev)
 
 | Việc | Chi tiết kỹ thuật |
 |---|---|

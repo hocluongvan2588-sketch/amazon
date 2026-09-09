@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { PpcIntelligencePanel } from './PpcIntelligencePanel'
 import { useAppState } from '@/lib/state-context'
 import {
   AlertTriangle,
@@ -52,6 +53,9 @@ export function PpcGrowthDesk() {
 
   return (
     <div className="space-y-6">
+      {/* Sprint 3.1 — PPC Intelligence Engine (Target ACOS Bid / Negative Automation / Placement) */}
+      <PpcIntelligencePanel />
+
       {/* Header Banner */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-950 p-6 text-white shadow-lg">
         <div>
