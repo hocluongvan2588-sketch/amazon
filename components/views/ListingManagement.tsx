@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
+
+import { utf8ByteLength } from '@/lib/listing-quality'
+import { ListingIntelligencePanel } from './ListingIntelligencePanel'
 import { useAppState } from '@/lib/state-context'
 import { ListingData } from '@/lib/types'
 import {
@@ -26,6 +29,11 @@ import {
   Zap,
 } from 'lucide-react'
 
+/** Đếm đúng UTF-8 bytes (fix bug cũ: .length đếm ký tự — sai với Unicode/tiếng Việt) */
+function backendSearchTermsBytes(text: string): number {
+  return utf8ByteLength(text || '')
+}
+
 export function ListingManagement() {
   const { filteredListings, applyListingDraft, isSyncing, openModal } = useAppState()
   const [selectedListing, setSelectedListing] = useState<ListingData>(filteredListings[0] || null)
@@ -40,6 +48,8 @@ export function ListingManagement() {
 
   return (
     <div className="space-y-6">
+      {/* Sprint 3.2 — Listing Quality Score + Keyword Gap */}
+      <ListingIntelligencePanel />
       {/* Top Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -226,7 +236,7 @@ export function ListingManagement() {
                   {/* Backend Search Terms */}
                   <div className="space-y-1">
                     <div className="text-[10px] font-mono font-bold uppercase text-slate-400">
-                      Backend Generic Keywords ({selectedListing.backendSearchTerms.length}/249 bytes)
+                      Backend Generic Keywords ({backendSearchTermsBytes(selectedListing.backendSearchTerms)}/249 bytes)
                     </div>
                     <p className="text-xs font-mono text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
                       {selectedListing.backendSearchTerms}
@@ -276,7 +286,7 @@ export function ListingManagement() {
                       {/* AI Backend Keywords */}
                       <div className="space-y-1">
                         <div className="text-[10px] font-mono font-bold uppercase text-blue-600">
-                          Backend Keywords Tối ưu ({selectedListing.aiOptimizationDraft.backendSearchTerms.length}/249 bytes)
+                          Backend Keywords Tối ưu ({backendSearchTermsBytes(selectedListing.aiOptimizationDraft.backendSearchTerms)}/249 bytes)
                         </div>
                         <p className="text-xs font-mono text-slate-700 bg-white p-2.5 rounded-lg border border-blue-200 shadow-2xs">
                           {selectedListing.aiOptimizationDraft.backendSearchTerms}

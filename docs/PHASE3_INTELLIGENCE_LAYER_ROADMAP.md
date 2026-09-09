@@ -93,7 +93,21 @@ Amazon không công bố mã nguồn/hash nội bộ của thuật toán tìm ki
 | Worker | `GET/POST /api/cron/ppc-optimizer` bảo vệ bằng `CRON_SECRET` — chạy toàn bộ chu kỳ, ghi `algorithm_runs`. |
 | UI | Nút **"Bật tự động tối ưu Bid"** (toggle per campaign; mặc định OFF = chỉ đề xuất chờ duyệt — an toàn), bảng **"Báo cáo kiến nghị phủ định từ khóa"** (tick nhiều dòng → phê duyệt hàng loạt), tab Placement mới. |
 
-### Sprint 3.2 — Listing Quality Score + Keyword Gap (~2–3 ngày dev)
+### Sprint 3.2 — Listing Quality Score + Keyword Gap ✅ HOÀN THÀNH (2026-09-09)
+
+| Hạng mục | File | Trạng thái |
+|---|---|---|
+| Engine chấm 100 điểm / 5 trục (Title 30, Bullets 25, Description 15, Images 10, Backend 20) từ nội dung THẬT | `lib/listing-quality.ts` | ✅ Test: list-01 = 85/100 Grade A — phát hiện Images 3/10, Backend 12/20 |
+| Claim cấm + shout + email/link ngoài (compliance risk LOW/MED/HIGH) | `lib/listing-quality.ts` | ✅ Tích hợp trong scorer |
+| **FIX DỨT ĐIỂM bug bytes**: `.length` → UTF-8 bytes (TextEncoder + truncate an toàn multi-byte) | `lib/listing-quality.ts` + `ListingManagement.tsx` | ✅ Bằng chứng: "bột cacao nguyên chất hữu cơ cao cấp" = 36 ký tự nhưng **46 UTF-8 bytes** — bản cũ hiển thị sai 36/249 |
+| Backend analysis: utilization %, bytes lãng phí (trùng title/bullets / lặp nội bộ / stopwords / dấu câu) + chuỗi tối ưu cắt đúng 249B | `lib/listing-quality.ts` | ✅ Test: 147/249 bytes (59%), lãng phí 117B do trùng title/bullets |
+| Keyword Gap: gapScore = volume × positionFactor × compRank × intent; HIGH_PRIORITY / OPPORTUNITY / DEFENDED + hành động chèn TITLE/BULLETS/BACKEND | `lib/keyword-gap.ts` | ✅ Test: 5 kw → 3 cơ hội (gap 18,945 "dark chocolate bar 70"), 2 DEFENDED |
+| Gợi ý cụm ngữ cảnh (Cosmos/semantic modifiers) | `lib/keyword-gap.ts` | ✅ 8 cụm/context với placement khuyến nghị |
+| API POST /api/listing/score (listingId hoặc custom content) + GET đếm bytes | `app/api/listing/score/route.ts` | ✅ |
+| Lịch sử điểm → `listing_scores_history` (defensive insert) | `supabase/migrations/20260913_listing_intelligence.sql` | ✅ (chạy migration trong Supabase) |
+| UI: chọn listing → "Chấm điểm SEO Listing" + radar 7 ô + progress bar bytes + issues theo severity + bảng gap | `components/views/ListingIntelligencePanel.tsx` | ✅ Đặt đầu tab Listing Management |
+
+### Sprint 3.2 — KẾ HOẠCH GỐC (~2–3 ngày dev)
 
 | Việc | Chi tiết |
 |---|---|
