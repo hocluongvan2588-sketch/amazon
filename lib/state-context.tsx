@@ -194,6 +194,7 @@ interface AppStateContextType {
   closeModal: () => void
   notification: { message: string; type: 'success' | 'info' | 'warning' | 'error' } | null
   setNotification: (notif: { message: string; type: 'success' | 'info' | 'warning' | 'error' } | null) => void
+  showToast: (message: string, type?: 'success' | 'info' | 'warning' | 'error') => void
 
   // Real-time Department Notification Dispatcher
   notifications: AppNotification[]
@@ -1121,6 +1122,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         closeModal,
         notification,
         setNotification,
+        showToast,
 
         // Real-time Department Notification Dispatcher
         notifications,

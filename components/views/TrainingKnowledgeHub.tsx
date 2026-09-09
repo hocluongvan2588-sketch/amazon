@@ -304,10 +304,19 @@ export function TrainingKnowledgeHub() {
   const activeModule = trainingModules.find((m) => m.id === selectedModuleId) || trainingModules[0]
 
   const toggleModuleCompleted = (modId: string) => {
+    const isNowDone = !completedModules[modId]
     setCompletedModules((prev) => ({
       ...prev,
-      [modId]: !prev[modId],
+      [modId]: isNowDone,
     }))
+    if (showToast) {
+      showToast(
+        isNowDone
+          ? `Đã hoàn thành ${activeModule.number}: ${activeModule.title}`
+          : `Đã mở lại trạng thái học tập cho ${activeModule.number}`,
+        isNowDone ? 'success' : 'info'
+      )
+    }
   }
 
   const completedCount = Object.values(completedModules).filter(Boolean).length

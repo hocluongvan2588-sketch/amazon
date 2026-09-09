@@ -164,8 +164,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
             title: 'BÀN ĐIỀU HÀNH TỔNG GIÁM ĐỐC (EXECUTIVE)',
             items: [
               { id: 'overview', label: 'Executive Dashboard & P&L', icon: LayoutDashboard },
-              { id: 'master-admin', label: 'Quản Trị Nhân Sự & Cấp Quyền', icon: Crown,
-  GraduationCap, badge: 'Master', badgeVariant: 'purple' },
+              { id: 'master-admin', label: 'Quản Trị Nhân Sự & Cấp Quyền', icon: Crown, badge: 'Master', badgeVariant: 'purple' },
               { id: 'supplier-portal', label: 'Danh Mục Nhà Xưởng & P&L', icon: ShieldCheck, badge: 'Clients', badgeVariant: 'green' },
               { id: 'vexim-kpis', label: 'Chỉ Số Hiệu Suất Toàn Cơ Quan', icon: Activity },
               { id: 'ai-efficiency', label: 'Chi Phí Hạ Tầng AI ($1.42)', icon: Cpu, badge: '$1.42', badgeVariant: 'green' },
