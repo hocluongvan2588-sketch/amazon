@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { SupplierReadyConfirmationModal } from "@/components/modals/SupplierReadyConfirmationModal"
+import { ShipmentPickupSlipModal } from "@/components/modals/ShipmentPickupSlipModal"
+import { VeximBookingConfirmationModal } from "@/components/modals/VeximBookingConfirmationModal"
 import { useAppState } from '@/lib/state-context'
 import { InventoryItem, InventoryRisk } from '@/lib/types'
 import {
@@ -41,6 +43,10 @@ export function InventoryManagement() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedItemForReady, setSelectedItemForReady] = useState<InventoryItem | null>(null)
   const [isReadyModalOpen, setIsReadyModalOpen] = useState(false)
+  const [selectedItemForSlip, setSelectedItemForSlip] = useState<InventoryItem | null>(null)
+  const [isSlipModalOpen, setIsSlipModalOpen] = useState(false)
+  const [selectedItemForBooking, setSelectedItemForBooking] = useState<InventoryItem | null>(null)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
 
   const displayedItems = filteredInventory.filter((item) => {
     if (filterRisk !== 'ALL' && item.riskLevel !== filterRisk) return false
@@ -313,15 +319,44 @@ export function InventoryManagement() {
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      {item.supplierReadyStatus === 'FACTORY_READY' ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-300">
-                            <CheckCircle2 size={12} className="text-emerald-600" />
+                      {item.supplierReadyStatus === 'BOOKED_TRANSIT' ? (
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-900 border border-emerald-300">
+                            <Truck size={12} className="text-emerald-600" />
+                            <span>Đã Có Lịch Xe & B/L</span>
+                          </span>
+                          <button
+                            onClick={() => {
+                              setSelectedItemForSlip(item)
+                              setIsSlipModalOpen(true)
+                            }}
+                            className="text-[11px] font-bold text-cyan-700 hover:text-cyan-900 underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Xem Lệnh Điều Xe & B/L</span>
+                            <ArrowRight size={12} />
+                          </button>
+                        </div>
+                      ) : item.supplierReadyStatus === 'FACTORY_READY' ? (
+                        <div className="flex flex-col items-end gap-1.5">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2.5 py-1 text-[11px] font-bold text-cyan-800 border border-cyan-300">
+                            <CheckCircle2 size={12} className="text-cyan-600" />
                             <span>Đã Báo Sẵn Sàng (+{item.supplierReadyQty || item.recommendedReorderQty} sp)</span>
                           </span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            Ngày lấy hàng: {item.supplierReadyDate || '12/09'}
-                          </span>
+                          {currentRole !== 'CLIENT_SUPPLIER' ? (
+                            <button
+                              onClick={() => {
+                                setSelectedItemForBooking(item)
+                                setIsBookingModalOpen(true)
+                              }}
+                              className="rounded-lg bg-blue-600 hover:bg-blue-700 px-2.5 py-1 text-[11px] font-bold text-white shadow-xs"
+                            >
+                              🚢 Book Tàu & Điều Xe
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              Ngày sẵn sàng: {item.supplierReadyDate || '12/09'}
+                            </span>
+                          )}
                         </div>
                       ) : item.recommendedReorderQty > 0 ? (
                         <button
@@ -356,6 +391,24 @@ export function InventoryManagement() {
         onClose={() => setIsReadyModalOpen(false)}
         item={selectedItemForReady}
         onConfirm={handleConfirmSupplierReady}
+      />
+
+      {/* Shipment Pickup Slip Modal */}
+      <ShipmentPickupSlipModal
+        isOpen={isSlipModalOpen}
+        onClose={() => setIsSlipModalOpen(false)}
+        item={selectedItemForSlip}
+      />
+
+      {/* Vexim Booking Confirmation Modal */}
+      <VeximBookingConfirmationModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={selectedItemForBooking}
+        onConfirm={(data) => {
+          const { confirmShipmentBooking } = useAppState()
+          confirmShipmentBooking(data)
+        }}
       />
     </div>
   )

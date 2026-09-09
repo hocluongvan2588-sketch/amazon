@@ -184,6 +184,28 @@ interface AppStateContextType {
   negateSearchTerm: (id: string) => void
   toggleBidRule: (id: string) => void
   submitPoaAppeal: (id: string) => void
+  submitSupplierReadyNotification: (params: {
+    inventoryItemId: string
+    sku: string
+    readyQty: number
+    cargoReadyDate: string
+    factoryAddress: string
+    notes?: string
+    cbmEst?: number
+    cartonsCount?: number
+  }) => void
+  confirmShipmentBooking: (params: {
+    inventoryItemId: string
+    sku: string
+    carrierName: string
+    billOfLadingNumber: string
+    fbaShipmentId: string
+    pickupDateTime: string
+    driverInfo: string
+    licensePlate: string
+    etdPort: string
+    etaFba: string
+  }) => void
 
   // UI state
   isScanning: boolean
@@ -1026,6 +1048,166 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Đã cập nhật trạng thái thuật toán đấu thầu PPC.', 'info')
   }
 
+
+  // 5. SUPPLIER CARGO READY NOTIFICATION ENGINE
+  const submitSupplierReadyNotification = (params: {
+    inventoryItemId: string
+    sku: string
+    readyQty: number
+    cargoReadyDate: string
+    factoryAddress: string
+    notes?: string
+    cbmEst?: number
+    cartonsCount?: number
+  }) => {
+    const { inventoryItemId, sku, readyQty, cargoReadyDate, factoryAddress, notes, cbmEst, cartonsCount } = params
+    const item = inventory.find((i) => i.id === inventoryItemId || i.sku === sku)
+    const client = clients.find((c) => c.id === item?.clientId) || clients[0]
+
+    // 1. Update Inventory Item State with Ready Flag
+    setInventory((prev) =>
+      prev.map((i) =>
+        i.id === inventoryItemId || i.sku === sku
+          ? {
+              ...i,
+              supplierReadyStatus: 'FACTORY_READY' as const,
+              supplierReadyDate: cargoReadyDate,
+              supplierReadyQty: readyQty,
+              supplierReadyNotes: notes,
+            }
+          : i
+      )
+    )
+
+    // 2. Create Internal Operational Task for Vexim Logistics
+    const newTask: OperationalTask = {
+      id: `task-${Date.now()}`,
+      taskNumber: tasks.length + 101,
+      clientId: client.id,
+      clientName: client.name,
+      title: `[XƯỞNG SẴN SÀNG HÀNG] ${client.name} báo có ${readyQty} units SKU ${sku} tại ${factoryAddress}`,
+      description: `Hàng sẵn sàng tại xưởng vào ngày: ${cargoReadyDate}. Số lượng: ${readyQty} units (${cartonsCount || Math.ceil(readyQty / 24)} thùng ~ ${cbmEst || 1.05} m³). Ghi chú: ${notes || 'Đã dán tem FNSKU chuẩn Amazon'}. Yêu cầu: Ánh Nguyễn liên hệ hãng tàu (Kerry/Flexport) book container và điều xe kéo cảng.`,
+      priority: 'HIGH',
+      status: 'OPEN',
+      assignedTo: 'Ánh Nguyễn (Logistics Lead)',
+      assignedRole: 'SUPPLY_CHAIN_SPECIALIST',
+      dueDate: cargoReadyDate,
+      source: 'MANUAL_OPS',
+      linkedEntity: { type: 'INVENTORY', id: inventoryItemId, name: sku },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    setTasks((prev) => [newTask, ...prev])
+
+    // 3. Dispatch Realtime Bell Notification to Vexim Logistics Team & Ops
+    addNotification({
+      title: `📦 XƯỞNG BÁO CÓ HÀNG: ${client.name} sẵn sàng ${readyQty} units SKU ${sku}`,
+      description: `Địa điểm: ${factoryAddress} • Ngày lấy hàng (CRD): ${cargoReadyDate}. Chuyên viên Logistics cần book chuyến tàu LCL/FCL ngay.`,
+      type: 'LOGISTICS',
+      priority: 'HIGH',
+      timestamp: 'Vừa xong',
+      targetRoles: ['SUPPLY_CHAIN_SPECIALIST', 'OPS_MANAGER', 'SUPER_ADMIN'],
+      targetTab: 'supply-chain-hub',
+      clientId: client.id,
+      clientName: client.name,
+      actionBy: { name: currentUser.fullName, role: currentRole },
+    })
+
+    // 4. Record Audit Log Entry
+    addAuditLog(
+      'SUPPLIER_CARGO_READY_NOTIFICATION',
+      'INVENTORY',
+      inventoryItemId,
+      sku,
+      'STATUS: PENDING_PRODUCTION',
+      'STATUS: FACTORY_READY',
+      `Chủ xưởng báo sẵn sàng ${readyQty} units (CRD: ${cargoReadyDate})`,
+      'INVENTORY'
+    )
+
+    showToast(`Đã gửi thông báo xác nhận lô hàng ${readyQty} units tới Trưởng kho Ánh Nguyễn!`, 'success')
+  }
+
+
+  // 6. VEXIM LOGISTICS BOOKING CONFIRMATION & DISPATCH
+  const confirmShipmentBooking = (params: {
+    inventoryItemId: string
+    sku: string
+    carrierName: string
+    billOfLadingNumber: string
+    fbaShipmentId: string
+    pickupDateTime: string
+    driverInfo: string
+    licensePlate: string
+    etdPort: string
+    etaFba: string
+  }) => {
+    const { inventoryItemId, sku, carrierName, billOfLadingNumber, fbaShipmentId, pickupDateTime, driverInfo, licensePlate, etdPort, etaFba } = params
+    const item = inventory.find((i) => i.id === inventoryItemId || i.sku === sku)
+    const client = clients.find((c) => c.id === item?.clientId) || clients[0]
+
+    // 1. Update Inventory Item with Confirmed Booking Details
+    setInventory((prev) =>
+      prev.map((i) =>
+        i.id === inventoryItemId || i.sku === sku
+          ? {
+              ...i,
+              supplierReadyStatus: 'BOOKED_TRANSIT' as const,
+              bookingDetails: {
+                carrierName,
+                billOfLadingNumber,
+                fbaShipmentId,
+                pickupDateTime,
+                driverInfo,
+                licensePlate,
+                etdPort,
+                etaFba,
+                confirmedBy: currentUser.fullName,
+                confirmedAt: new Date().toISOString(),
+              },
+            }
+          : i
+      )
+    )
+
+    // 2. Mark any related task as COMPLETED
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.title.includes(sku) && t.title.includes('XƯỞNG SẴN SÀNG HÀNG')
+          ? { ...t, status: 'COMPLETED' as const, updatedAt: new Date().toISOString() }
+          : t
+      )
+    )
+
+    // 3. Dispatch Notification directly to the Vietnamese Supplier (Chủ Xưởng)
+    addNotification({
+      title: `🚢 VEXIM ĐÃ BOOK TÀU & LỊCH XE LẤY HÀNG: SKU ${sku}`,
+      description: `Hãng tàu: ${carrierName} • Lịch xe đến xưởng lấy hàng: ${pickupDateTime} • Xe: ${licensePlate} (${driverInfo}) • Mã B/L: ${billOfLadingNumber} • FBA ID: ${fbaShipmentId}.`,
+      type: 'LOGISTICS',
+      priority: 'HIGH',
+      timestamp: 'Vừa xong',
+      targetRoles: ['CLIENT_SUPPLIER', 'SUPPLY_CHAIN_SPECIALIST', 'ACCOUNT_EXECUTIVE', 'SUPER_ADMIN'],
+      targetTab: 'inventory',
+      clientId: client.id,
+      clientName: client.name,
+      actionBy: { name: currentUser.fullName, role: currentRole },
+    })
+
+    // 4. Record Audit Log
+    addAuditLog(
+      'VEXIM_LOGISTICS_CONFIRM_BOOKING',
+      'INVENTORY',
+      inventoryItemId,
+      sku,
+      'STATUS: FACTORY_READY',
+      'STATUS: BOOKED_TRANSIT',
+      `Đã book tàu ${carrierName} & điều xe ${licensePlate} đến xưởng ngày ${pickupDateTime} (B/L: ${billOfLadingNumber})`,
+      'INVENTORY'
+    )
+
+    showToast(`Đã xác nhận booking tàu & gửi phiếu điều xe tới Chủ xưởng ${client.name}!`, 'success')
+  }
+
   const submitPoaAppeal = (id: string) => {
     setPoaDocuments((prev) =>
       prev.map((p) => (p.id === id ? { ...p, status: 'SUBMITTED_TO_AMAZON' } : p))
@@ -1115,6 +1297,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         negateSearchTerm,
         toggleBidRule,
         submitPoaAppeal,
+        submitSupplierReadyNotification,
+        confirmShipmentBooking,
         isScanning,
         isSyncing,
         lastSyncNotice,

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { VeximBookingConfirmationModal } from "@/components/modals/VeximBookingConfirmationModal"
 import { useAppState } from '@/lib/state-context'
 import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
 import { DEFAULT_RATE_CARDS, calculateFullLandedCost, calculateCbm, calculateVolumetricWeight } from '@/lib/logistics-engine'
@@ -37,10 +38,12 @@ import {
 } from 'lucide-react'
 
 export function SupplyChainHub() {
-  const { dynamicLeadTimeRoutes, geoFbaPlacements, inventory, products, showToast } = useAppState()
+  const { dynamicLeadTimeRoutes, geoFbaPlacements, inventory, products, showToast, confirmShipmentBooking } = useAppState()
   const [selectedRouteId, setSelectedRouteId] = useState<string>('route-catlai-lax')
-  const [activeTab, setActiveTab] = useState<'landedcost' | 'leadtime' | 'geoplacement' | 'buffer3pl' | 'webhooks'>('landedcost')
+  const [activeTab, setActiveTab] = useState<'intake-queue' | 'landedcost' | 'leadtime' | 'geoplacement' | 'buffer3pl' | 'webhooks'>('intake-queue')
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
+  const [selectedItemForBooking, setSelectedItemForBooking] = useState<any>(null)
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
 
   // Landed Cost & CBM Calculator Form State (Fully Interactive Dynamic Engine)
   const [selectedProdId, setSelectedProdId] = useState<string>(products[0]?.id || '')
@@ -219,6 +222,20 @@ export function SupplyChainHub() {
       {/* Sub-Navigation Tabs */}
       <div className="flex flex-wrap border-b border-slate-200">
         <button
+          onClick={() => setActiveTab('intake-queue')}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            activeTab === 'intake-queue'
+              ? 'border-cyan-600 text-cyan-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Truck size={16} />
+          <span>Hàng Đợi Lô Hàng Xưởng Báo</span>
+          <span className="rounded-full bg-rose-100 text-rose-800 px-2 py-0.5 text-[10px] font-bold">
+            {inventory.filter((i) => i.supplierReadyStatus === 'FACTORY_READY' || i.riskLevel === 'CRITICAL').length} Lô Cần Xử Lý
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('landedcost')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
             activeTab === 'landedcost'
@@ -285,6 +302,127 @@ export function SupplyChainHub() {
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
         </button>
       </div>
+
+            {/* TAB: FACTORY CARGO INTAKE QUEUE */}
+      {activeTab === 'intake-queue' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-cyan-600 animate-pulse" />
+                <h2 className="text-sm font-bold text-slate-900">
+                  Danh Sách Lô Hàng Các Nhà Xưởng Việt Nam Đã Báo Sẵn Sàng (Factory Intake Queue)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500">
+                Nơi đội ngũ Logistics Vexim tiếp nhận phiếu xuất xưởng từ Vinacacao, An An, Lotus Craft &rarr; Phê duyệt book tàu &rarr; Điều xe tải đến lấy hàng.
+              </p>
+            </div>
+            <span className="font-mono text-xs font-bold text-cyan-900 bg-cyan-50 px-3 py-1.5 rounded-lg border border-cyan-200 shrink-0">
+              SLA Book Xe: &le; 48 Giờ
+            </span>
+          </div>
+
+          {/* Shipment Queue Cards */}
+          <div className="grid grid-cols-1 gap-4">
+            {inventory.map((item) => {
+              const isFactoryReady = item.supplierReadyStatus === 'FACTORY_READY'
+              const isBooked = item.supplierReadyStatus === 'BOOKED_TRANSIT'
+              const readyQty = item.supplierReadyQty || item.recommendedReorderQty || 1200
+              const readyDate = item.supplierReadyDate || '12/09/2026'
+
+              return (
+                <div
+                  key={item.id}
+                  className={`rounded-2xl border bg-white p-5 shadow-xs transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${
+                    isBooked
+                      ? 'border-emerald-300 bg-emerald-50/20'
+                      : isFactoryReady
+                      ? 'border-cyan-400 ring-2 ring-cyan-500/10'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 text-[10px] font-mono">
+                        VINACACAO / SUPPLIER
+                      </span>
+                      <span className="font-mono text-xs font-bold text-slate-700">{item.sku}</span>
+                      {isBooked ? (
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold px-2.5 py-0.5 text-[10px] flex items-center gap-1">
+                          <CheckCircle2 size={11} className="text-emerald-600" />
+                          Đã Book Tàu & Điều Xe (B/L: {item.bookingDetails?.billOfLadingNumber || 'KRY-VNM-LAX-8801'})
+                        </span>
+                      ) : isFactoryReady ? (
+                        <span className="rounded-full bg-cyan-100 text-cyan-800 border border-cyan-300 font-bold px-2.5 py-0.5 text-[10px] flex items-center gap-1 animate-pulse">
+                          <Clock size={11} className="text-cyan-600" />
+                          Xưởng Đã Báo Sẵn Sàng (Chờ Vexim Book Tàu)
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 text-[10px]">
+                          Cần Bổ Sung Tồn Kho
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-sm font-bold text-slate-900 leading-snug">{item.title}</h3>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
+                      <span>Số lượng đóng gói: <strong className="text-blue-700 font-bold font-mono">+{readyQty.toLocaleString()} units</strong></span>
+                      <span>&bull;</span>
+                      <span>Ngày xưởng sẵn sàng (CRD): <strong className="text-slate-900 font-mono">{readyDate}</strong></span>
+                      <span>&bull;</span>
+                      <span>Tồn FBA: <strong className="text-red-600 font-bold">{item.fbaAvailable} sp</strong> (Còn {item.daysOfSupply.toFixed(1)} ngày)</span>
+                    </div>
+
+                    {item.bookingDetails && (
+                      <div className="rounded-xl bg-slate-50 p-3 border border-slate-200 text-xs grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase">Hãng tàu:</span>
+                          <strong className="text-slate-800">{item.bookingDetails.carrierName}</strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase">Xe lấy hàng:</span>
+                          <strong className="text-slate-800">{item.bookingDetails.pickupDateTime} ({item.bookingDetails.licensePlate})</strong>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 block uppercase">Mã B/L & FBA ID:</span>
+                          <strong className="font-mono text-cyan-800">{item.bookingDetails.billOfLadingNumber} / {item.bookingDetails.fbaShipmentId}</strong>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {isBooked ? (
+                      <button
+                        onClick={() => {
+                          setSelectedItemForBooking(item)
+                          setIsBookingModalOpen(true)
+                        }}
+                        className="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 px-4 py-2.5 text-xs font-bold text-slate-700 transition-colors"
+                      >
+                        Cập Nhật Lịch Xe
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setSelectedItemForBooking(item)
+                          setIsBookingModalOpen(true)
+                        }}
+                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:from-cyan-500 hover:to-blue-500 transition-all cursor-pointer active:scale-[0.98]"
+                      >
+                        <Ship size={15} />
+                        <span>Phê Duyệt & Điều Xe Lấy Hàng</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* TAB 0: INTERACTIVE LANDED COST & CBM/KGS CALCULATOR */}
       {activeTab === 'landedcost' && (
@@ -842,6 +980,15 @@ export function SupplyChainHub() {
         onClose={() => setIsLabelModalOpen(false)}
         product={selectedProduct}
         allProducts={products}
+      />
+      {/* Vexim Booking Confirmation Modal */}
+      <VeximBookingConfirmationModal
+        isOpen={isBookingModalOpen}
+        onClose={() => setIsBookingModalOpen(false)}
+        item={selectedItemForBooking}
+        onConfirm={(data) => {
+          confirmShipmentBooking(data)
+        }}
       />
     </div>
   )

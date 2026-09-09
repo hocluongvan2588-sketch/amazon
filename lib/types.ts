@@ -196,6 +196,22 @@ export interface InventoryItem {
   recommendedReorderQty: number
   estimatedStockoutDate: string | null
   lastRestockedDate: string
+  supplierReadyStatus?: 'PENDING_CONFIRMATION' | 'FACTORY_READY' | 'BOOKED_TRANSIT' | 'IN_TRANSIT'
+  supplierReadyDate?: string
+  supplierReadyQty?: number
+  supplierReadyNotes?: string
+  bookingDetails?: {
+    carrierName: string
+    billOfLadingNumber: string
+    fbaShipmentId: string
+    pickupDateTime: string
+    driverInfo: string
+    licensePlate: string
+    etdPort: string
+    etaFba: string
+    confirmedBy: string
+    confirmedAt: string
+  }
 }
 
 export interface OrderItem {
