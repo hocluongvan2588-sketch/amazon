@@ -1,5 +1,7 @@
 'use client'
 
+import { NotificationCenterDropdown } from "@/components/NotificationCenterDropdown"
+
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { UserRole } from '@/lib/types'
@@ -221,6 +223,9 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
             className="w-full rounded-lg border border-border bg-slate-50 pl-8 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
           />
         </div>
+
+        {/* Interactive Notification Bell */}
+        <NotificationCenterDropdown />
 
         {/* AI Scan Trigger Button */}
         <button
