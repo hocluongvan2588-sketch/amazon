@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react'
 import {
   AccountHealthMetric,
+  AppNotification,
+  NotificationType,
   AIRecommendation,
   AuditLogEntry,
   ClientPerformanceReport,
@@ -36,6 +38,7 @@ import {
   mockAgencyKpis,
   mockAuditLogs,
   mockClientReports,
+  mockNotifications,
   mockClients,
   mockCustomerMessages,
   mockInventory,
@@ -191,6 +194,13 @@ interface AppStateContextType {
   closeModal: () => void
   notification: { message: string; type: 'success' | 'info' | 'warning' | 'error' } | null
   setNotification: (notif: { message: string; type: 'success' | 'info' | 'warning' | 'error' } | null) => void
+
+  // Real-time Department Notification Dispatcher
+  notifications: AppNotification[]
+  addNotification: (notification: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>) => void
+  markNotificationAsRead: (id: string) => void
+  markAllNotificationsAsRead: (role?: UserRole) => void
+  clearNotification: (id: string) => void
 }
 
 const AppStateContext = createContext<AppStateContextType | undefined>(undefined)
@@ -258,6 +268,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [trademarkWatches, setTrademarkWatches] = useState<TrademarkWatch[]>(mockTrademarkWatches)
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>(() => loadFromStorage('vexim_team_members', mockTeamMembers))
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => loadFromStorage('vexim_auth', true))
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage('vexim_notifications', mockNotifications))
 
   // Ephemeral UI states
   const [isScanning, setIsScanning] = useState(false)
@@ -290,6 +301,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { saveToStorage('vexim_harvested_terms', harvestedSearchTerms) }, [harvestedSearchTerms])
   useEffect(() => { saveToStorage('vexim_bid_rules', algorithmicBidRules) }, [algorithmicBidRules])
   useEffect(() => { saveToStorage('vexim_poa_docs', poaDocuments) }, [poaDocuments])
+  useEffect(() => { saveToStorage('vexim_notifications', notifications) }, [notifications])
 
   // Live Supabase Database Hydration on Mount
   useEffect(() => {
@@ -507,6 +519,43 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     SupabaseDatabaseService.createAuditLog(newLog)
   }
 
+
+  // ====================================================================
+  // EVENT NOTIFICATION DISPATCHER ENGINE
+  // Automatically routes notifications to target departments based on role & action
+  // ====================================================================
+  const addNotification = (notifData: Omit<AppNotification, 'id' | 'createdAt' | 'isRead'>) => {
+    const newNotif: AppNotification = {
+      ...notifData,
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      timestamp: notifData.timestamp || 'Vừa xong',
+      isRead: false,
+    }
+    setNotifications((prev) => [newNotif, ...prev])
+  }
+
+  const markNotificationAsRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+    )
+  }
+
+  const markAllNotificationsAsRead = (role?: UserRole) => {
+    setNotifications((prev) =>
+      prev.map((n) => {
+        if (!role || n.targetRoles.includes(role) || n.targetRoles.includes('ALL' as any)) {
+          return { ...n, isRead: true }
+        }
+        return n
+      })
+    )
+  }
+
+  const clearNotification = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id))
+  }
+
   // 1. APPROVE RECOMMENDATION
   const approveRecommendation = async (id: string, notes?: string) => {
     const rec = recommendations.find((r) => r.id === id)
@@ -546,6 +595,25 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     SupabaseDatabaseService.updateRecommendation(id, 'APPROVED', currentRole, notes)
     showToast(`Đã duyệt đề xuất: ${rec.title}`, 'success')
+
+    // Dispatch notification to relevant departments
+    const targetDeptRole: UserRole = rec.agentType === 'PPC' ? 'PPC_SPECIALIST'
+      : rec.agentType === 'INVENTORY' ? 'SUPPLY_CHAIN_SPECIALIST'
+      : rec.agentType === 'COMPLIANCE' ? 'COMPLIANCE_SPECIALIST'
+      : 'BRAND_CS_SPECIALIST'
+
+    addNotification({
+      title: `✅ Phê duyệt Đề xuất AI: ${rec.title}`,
+      description: `Đã duyệt hành động [${rec.agentType}] cho ${rec.entityIdentifier}. Đang chuyển sang hàng đợi thực thi SP-API.`,
+      type: 'APPROVAL',
+      priority: rec.priority,
+      timestamp: 'Vừa xong',
+      targetRoles: ['SUPER_ADMIN', 'OPS_MANAGER', targetDeptRole, 'ACCOUNT_EXECUTIVE', 'CLIENT_SUPPLIER'],
+      targetTab: 'ai-operations',
+      clientId: rec.clientId,
+      clientName: rec.clientName,
+      actionBy: { name: currentUser.fullName, role: currentRole },
+    })
   }
 
   // 2. REJECT RECOMMENDATION
@@ -580,6 +648,24 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     SupabaseDatabaseService.updateRecommendation(id, 'REJECTED', currentRole, reason)
     showToast(`Đã từ chối đề xuất: ${rec.title}`, 'info')
+
+    const targetDeptRole: UserRole = rec.agentType === 'PPC' ? 'PPC_SPECIALIST'
+      : rec.agentType === 'INVENTORY' ? 'SUPPLY_CHAIN_SPECIALIST'
+      : rec.agentType === 'COMPLIANCE' ? 'COMPLIANCE_SPECIALIST'
+      : 'BRAND_CS_SPECIALIST'
+
+    addNotification({
+      title: `⛔ Bác bỏ Đề xuất AI: ${rec.title}`,
+      description: `Lý do: ${reason || 'Không khớp chiến lược kinh doanh hiện tại'}.`,
+      type: 'APPROVAL',
+      priority: 'MEDIUM',
+      timestamp: 'Vừa xong',
+      targetRoles: ['SUPER_ADMIN', 'OPS_MANAGER', targetDeptRole],
+      targetTab: 'ai-operations',
+      clientId: rec.clientId,
+      clientName: rec.clientName,
+      actionBy: { name: currentUser.fullName, role: currentRole },
+    })
   }
 
   // 3. EXECUTE RECOMMENDATION (Simulate Amazon SP-API Call)
@@ -1035,6 +1121,13 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         closeModal,
         notification,
         setNotification,
+
+        // Real-time Department Notification Dispatcher
+        notifications,
+        addNotification,
+        markNotificationAsRead,
+        markAllNotificationsAsRead,
+        clearNotification,
       }}
     >
       {children}

@@ -649,3 +649,35 @@ export interface TeamMember {
   twoFactorEnabled?: boolean
   createdAt?: string
 }
+
+// Cross-Department Notification & Event Dispatcher Types
+export type NotificationType =
+  | 'CRITICAL_SAFETY'
+  | 'LOW_STOCK'
+  | 'COMPLIANCE'
+  | 'PPC_HARVEST'
+  | 'LOGISTICS'
+  | 'APPROVAL'
+  | 'TASK'
+  | 'LISTING'
+  | 'FINANCE'
+  | 'SYSTEM'
+
+export interface AppNotification {
+  id: string
+  title: string
+  description: string
+  type: NotificationType
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
+  timestamp: string
+  createdAt: string
+  isRead: boolean
+  targetRoles: UserRole[] | ['ALL']
+  targetTab: string
+  clientId?: string
+  clientName?: string
+  actionBy?: {
+    name: string
+    role: UserRole
+  }
+}
