@@ -545,7 +545,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const markAllNotificationsAsRead = (role?: UserRole) => {
     setNotifications((prev) =>
       prev.map((n) => {
-        if (!role || n.targetRoles.includes(role) || n.targetRoles.includes('ALL' as any)) {
+        const roles = n.targetRoles as (UserRole | 'ALL')[]
+        if (!role || roles.includes(role) || roles.includes('ALL')) {
           return { ...n, isRead: true }
         }
         return n
@@ -607,7 +608,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       title: `✅ Phê duyệt Đề xuất AI: ${rec.title}`,
       description: `Đã duyệt hành động [${rec.agentType}] cho ${rec.entityIdentifier}. Đang chuyển sang hàng đợi thực thi SP-API.`,
       type: 'APPROVAL',
-      priority: rec.priority,
+      priority: rec.priority === 'OPPORTUNITY' ? 'MEDIUM' : rec.priority,
       timestamp: 'Vừa xong',
       targetRoles: ['SUPER_ADMIN', 'OPS_MANAGER', targetDeptRole, 'ACCOUNT_EXECUTIVE', 'CLIENT_SUPPLIER'],
       targetTab: 'ai-operations',

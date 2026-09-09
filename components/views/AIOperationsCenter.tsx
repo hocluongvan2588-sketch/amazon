@@ -488,9 +488,9 @@ export function AIOperationsCenter() {
                         {rec.clientName}
                       </span>
 
-                      {rec.sku && (
+                      {rec.entityIdentifier && (
                         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-500">
-                          SKU: {rec.sku}
+                          ID: {rec.entityIdentifier}
                         </span>
                       )}
 
@@ -524,7 +524,7 @@ export function AIOperationsCenter() {
 
                     {/* Impact Reasoning */}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 pt-1">
-                      <span><strong>Tác động:</strong> {rec.estimatedImpact}</span>
+                      <span><strong>Tác động:</strong> {rec.expectedImpact}</span>
                       <span>&bull;</span>
                       <span><strong>Mức độ tự tin AI:</strong> {rec.confidenceScore}%</span>
                       <span>&bull;</span>

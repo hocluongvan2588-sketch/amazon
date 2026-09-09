@@ -672,7 +672,7 @@ export interface AppNotification {
   timestamp: string
   createdAt: string
   isRead: boolean
-  targetRoles: UserRole[] | ['ALL']
+  targetRoles: (UserRole | 'ALL')[]
   targetTab: string
   clientId?: string
   clientName?: string

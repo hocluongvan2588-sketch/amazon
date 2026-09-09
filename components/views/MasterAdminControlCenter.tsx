@@ -439,7 +439,7 @@ export function MasterAdminControlCenter() {
                         <span>Hành động: <strong className="text-slate-800"><FormattedText text={rec.proposedAction} /></strong></span>
                         <span>&bull;</span>
                         <span className="rounded bg-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-800">
-                          Người phụ trách: {rec.impactCategory === 'FINANCIAL' || rec.title.includes('bid') ? 'Lương Hoàng Minh (PPC Lead)' : rec.impactCategory === 'OPERATIONAL' || rec.title.includes('Listing') ? 'Trần Thu Hà (Brand Lead)' : rec.impactCategory === 'LEGAL' || rec.title.includes('Dị Ứng') ? 'Lê Hoàng Nam (Legal Lead)' : 'Nguyễn Tuấn Anh (Ops Manager)'}
+                          Người phụ trách: {rec.agentType === 'PPC' || rec.title.includes('bid') ? 'Lương Hoàng Minh (PPC Lead)' : rec.agentType === 'LISTING' || rec.title.includes('Listing') ? 'Trần Thu Hà (Brand Lead)' : rec.agentType === 'COMPLIANCE' || rec.title.includes('Dị Ứng') ? 'Lê Hoàng Nam (Legal Lead)' : 'Nguyễn Tuấn Anh (Ops Manager)'}
                         </span>
                       </div>
                     </div>

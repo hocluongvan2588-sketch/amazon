@@ -33,6 +33,7 @@ import { ComplianceLegalDesk } from '@/components/views/ComplianceLegalDesk'
 import { SupplierExecutivePortal } from '@/components/views/SupplierExecutivePortal'
 import { MasterAdminControlCenter } from '@/components/views/MasterAdminControlCenter'
 import { UserProfileAccount } from '@/components/views/UserProfileAccount'
+import { TrainingKnowledgeHub } from '@/components/views/TrainingKnowledgeHub'
 import { LoginScreen } from '@/components/views/LoginScreen'
 
 // Modals

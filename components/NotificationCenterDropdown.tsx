@@ -47,8 +47,9 @@ export function NotificationCenterDropdown() {
   // Determine if a notification is relevant to the active user's role
   const isRelevantToRole = (notif: AppNotification, role: UserRole): boolean => {
     if (role === 'SUPER_ADMIN' || role === 'OPS_MANAGER') return true
-    if (notif.targetRoles.includes('ALL' as any)) return true
-    return notif.targetRoles.includes(role)
+    const roles = notif.targetRoles as (UserRole | 'ALL')[]
+    if (roles.includes('ALL')) return true
+    return roles.includes(role)
   }
 
   // Filtered notifications based on user role and active filters
