@@ -222,7 +222,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   // Navigation State
   const [currentRole, setCurrentRoleState] = useState<UserRole>(() => loadFromStorage('vexim_role', 'SUPER_ADMIN'))
   const [workspaceMode, setWorkspaceModeState] = useState<WorkspaceMode>(() => loadFromStorage('vexim_ws_mode', 'ALL_OPERATIONS'))
-  const [activeTab, setActiveTabState] = useState<ActiveNavTab>(() => loadFromStorage('vexim_active_tab', 'master-admin'))
+  const [activeTab, setActiveTabState] = useState<ActiveNavTab>(() => loadFromStorage('vexim_active_tab', 'overview'))
   const [selectedClientId, setSelectedClientIdState] = useState<string>(() => loadFromStorage('vexim_client_id', 'client-vina-01'))
   const [timeRange, setTimeRange] = useState<TimeRangeFilter>('7days')
   const [searchQuery, setSearchQuery] = useState('')
@@ -354,7 +354,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         break
       case 'SUPER_ADMIN':
         setWorkspaceModeState('ALL_OPERATIONS')
-        setActiveTabState('master-admin')
+        setActiveTabState('overview')
         break
       case 'OPS_MANAGER':
       case 'ACCOUNT_EXECUTIVE':
@@ -411,7 +411,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       setIsAuthenticated(true)
       saveToStorage('vexim_auth', true)
       setCurrentRole(user.role)
-      showToast(`Đăng nhập thành công: ${user.fullName} (${user.role})`, 'success')
+      showToast(`Đăng nhập thành công: ${user.fullName} (${user.role.replace(/_/g, ' ')})`, 'success')
       return true
     }
     showToast('Email hoặc mật khẩu không chính xác. Mật khẩu chuẩn: Anthai@88', 'error')
