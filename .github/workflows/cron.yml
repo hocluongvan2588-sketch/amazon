@@ -1,0 +1,39 @@
+# VEXIM INTELLIGENCE CRON — fallback cho hosting KHÔNG phải Vercel
+# (Vercel dùng vercel.json; GitHub Actions tự chạy và gọi endpoint kèm secret)
+# Cần khai báo repository secrets: SITE_URL (https://domain-cua-ban) và CRON_SECRET.
+#
+# Lưu ý Vercel Hobby chỉ cho cron hằng ngày — nếu dùng Hobby, đổi schedule
+# ppc-optimizer trong vercel.json thành "0 2 * * *" (1 lần/ngày) hoặc nâng gói.
+
+name: Vexim Intelligence Cron
+
+on:
+  schedule:
+    - cron: '0 */2 * * *' # mỗi 2 giờ — khớp vercel.json
+  workflow_dispatch: # cho phép chạy tay từ tab Actions
+
+jobs:
+  ppc-optimizer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger PPC Optimizer (bid/negative/placement)
+        run: |
+          curl -fsS -m 120 -X POST "$SITE_URL/api/cron/ppc-optimizer" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" || exit 1
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+
+  intelligence-scan:
+    if: github.event.schedule == '0 2 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Full Intelligence Scan (daily)
+        run: |
+          curl -fsS -m 300 -X POST "$SITE_URL/api/cron/intelligence-scan" \
+            -H "x-cron-secret: $CRON_SECRET" \
+            -H "Content-Type: application/json" || exit 1
+        env:
+          SITE_URL: ${{ secrets.SITE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

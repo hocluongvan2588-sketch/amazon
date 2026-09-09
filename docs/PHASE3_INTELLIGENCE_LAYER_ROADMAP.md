@@ -135,7 +135,18 @@ Amazon không công bố mã nguồn/hash nội bộ của thuật toán tìm ki
 | `lib/forecast-engine.ts` | ① `weightedVelocity(v7, v14, v30)` = **50% / 30% / 20%** (thay thế 60/40 cũ, giữ seasonality multiplier). ② `daysOfSupply = (available + inbound) / weightedVelocity` + ngày đứt hàng dự kiến. ③ `capacitySuggestion`: ft³ cần = dự báo units Q4 × thể tích thùng (CBM→ft³ ×35.31) × safety 1.15; mức bid $/ft³ tối ưu = biên lợi nhuận trên mỗi ft³ bán được × hệ số chắc chắn nhận 100% Performance Credits (bid thấp hơn ngưỡng market rate tham chiếu); cảnh báo khi bid vượt biên lợi nhuận. |
 | API + UI | `POST /api/inventory/forecast`; app đổi sang tính **live** days-of-supply từ engine thay vì cột tĩnh; nút **"Gợi ý mức đấu giá dung lượng"** trong tab Capacity → điền sẵn ft³ + $/ft³ khuyến nghị vào form bid hiện có. |
 
-### Sprint 3.4 — Workers + Hoàn thiện Dashboard (~1–2 ngày dev)
+### Sprint 3.4 — Workers + Hoàn thiện Dashboard ✅ HOÀN THÀNH (2026-09-09) — ĐÓNG GIAI ĐOẠN 3
+
+| Hạng mục | File | Trạng thái |
+|---|---|---|
+| **Thay runAiFullScan giả**: setTimeout xóa sổ — giờ gọi `/api/intelligence/scan` chạy thật 5 engine (PPC bid/negative/placement + Forecast 50/30/20 + Listing Quality/Gap); toast/notice hiện SỐ LIỆU THẬT; fallback cục bộ = AIOperationsOrchestrator (vẫn là thuật toán thật, có nhãn "Scan cục bộ") | `lib/state-context.tsx` | ✅ Test: 17 đối tượng, 12 kiến nghị, impact $135.55 |
+| Scan tổng hợp server-side + audit `algorithm_runs` (FULL_SCAN) | `lib/intelligence-scan.ts` | ✅ mode/dataSource minh bạch |
+| API `POST/GET /api/intelligence/scan` | `app/api/intelligence/scan/route.ts` | ✅ |
+| Worker daily `CRON_SECRET` (timing-safe, prod default-deny) | `app/api/cron/intelligence-scan/route.ts` | ✅ Test: 7069ms — là thời gian engine thật |
+| **vercel.json**: ppc-optimizer mỗi 2 giờ + intelligence-scan daily 02:00 UTC | `vercel.json` | ✅ (lưu ý Hobby chỉ cho daily — ghi trong workflow comment) |
+| GitHub Actions fallback cho hosting khác (SITE_URL + CRON_SECRET secrets) | `.github/workflows/cron.yml` | ✅ |
+
+### Sprint 3.4 — KẾ HOẠCH GỐC (~1–2 ngày dev)
 
 | Việc | Chi tiết |
 |---|---|
@@ -150,3 +161,29 @@ Amazon không công bố mã nguồn/hash nội bộ của thuật toán tìm ki
 2. Mỗi lần chạy ghi `algorithm_runs` (input hash, output, ai duyệt) — truy vết được.
 3. Giới hạn biến động: bid không đổi quá ±20% mỗi lần, tối đa 1 lần/ngày/từ khóa.
 4. Dual-mode nghiêm ngặt: simulated không bao giờ ghi DB/đẩy Amazon (chuẩn đã áp từ phase 2).
+
+---
+
+## PHỤ LỤC — TỔNG KẾT GIAI ĐOẠN 3 (đóng ngày 2026-09-09)
+
+**Đã bàn giao đủ 4 Sprint:**
+
+| Sprint | Nội dung | Commit |
+|---|---|---|
+| 3.1 | PPC Automation Engine (Target-ACOS bid ±20% guardrail, Auto Negative, Placement) + 4 bảng DB + API/approve/cron + UI Panel | a9b93e9 |
+| 3.3 | Forecast Velocity 50/30/20 + Days of Supply live + Capacity Bid ft³/$-ft³ + UI + nút nộp bid tự điền | df476bf |
+| 3.2 | Listing Quality Score 5 trục + FIX UTF-8 249 bytes + Keyword Gap + UI Panel | b5dde36 |
+| 3.4 | Full Scan thật thay giả + vercel.json crons + GitHub Actions fallback + audit algorithm_runs | (commit này) |
+
+**Trạng thái Intelligence Layer sau Giai đoạn 3:**
+- Mọi thuật toán chạy theo công thức nghiệp vụ đã duyệt, deterministic, unit-test được.
+- Mọi kết quả gắn nhãn LIVE/SIMULATED; simulated không bao giờ ghi DB/đẩy Amazon.
+- Human-in-the-loop mặc định; auto-apply là opt-in từng tính năng.
+- Mọi lần chạy thuật toán có thể được audit qua bảng `algorithm_runs` (sau khi chạy migration 20260911 + 20260912 + 20260913).
+- Cron vận hành: PPC mỗi 2 giờ, Full Scan hằng ngày (Vercel hoặc GitHub Actions).
+
+**Việc còn mở cho chủ đầu tư (đã liệt kê trong các phần trên):**
+1. Chạy 3 migration 20260911/20260912/20260913 trong Supabase (bảng + cột cho tầng Intelligence).
+2. Đặt `CRON_SECRET` ở hosting + secrets cho GitHub Actions (SITE_URL, CRON_SECRET).
+3. Khi có Ads/SP-API credentials: hệ thống tự chuyển LIVE, engines ăn dữ liệu Amazon thật.
+4. Giai đoạn 4 (đề xuất): Listings PATCH/feed để áp listing suggestions tự động; Ads async reports cho metrics 7 ngày; PII/RDT cho dữ liệu khách.

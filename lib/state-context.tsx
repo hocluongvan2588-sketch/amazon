@@ -76,6 +76,7 @@ import {
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
 import { DEFAULT_RATE_CARDS } from './logistics-engine'
+import { AIOperationsOrchestrator } from './ai-engine'
 import type { SyncResult } from './amazon-sp-api'
 
 export type ActiveNavTab =
@@ -869,12 +870,51 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }
 
   // 7. RUN AI SCAN
+  // SPRINT 3.4 — FULL SCAN THẬT: gọi /api/intelligence/scan chạy cả 5 engine
+  // (PPC bid/negative/placement + Forecast 50/30/20 + Listing Quality/Gap).
+  // Fallback: nếu server không phản hồi -> chạy các agent deterministic cục bộ
+  // (AIOperationsOrchestrator) trên dữ liệu local — vẫn là thuật toán thật,
+  // KHÔNG còn setTimeout giả số liệu.
   const runAiFullScan = async (): Promise<number> => {
     setIsScanning(true)
-    await new Promise((resolve) => setTimeout(resolve, 1400))
-    setIsScanning(false)
-    showToast('AI Multi-Agent Scan hoàn tất: Đã phân tích 12 SKUs, 3 Chiến dịch PPC, và Tình trạng Tài khoản.', 'success')
-    return 7
+    try {
+      try {
+        const res = await fetch('/api/intelligence/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        })
+        if (res.ok) {
+          const d = await res.json()
+          const parts = [
+            `${d.totals.analyzed} đối tượng`,
+            `${d.totals.proposals} kiến nghị`,
+            `ước tính $${d.totals.estimatedImpactUsd}`,
+            `tồn CRITICAL ${d.inventory.critical}/${d.inventory.skus}`,
+            `listing TB ${d.listings.avgScore}/100`,
+          ]
+          const msg = `Full Scan [${d.mode}]: ${parts.join(' • ')}`
+          setLastSyncNotice(msg)
+          showToast(
+            d.inventory.critical > 0 || d.listings.below70 > 0 ? `🧠 ${msg}` : `✅ ${msg}`,
+            d.inventory.critical > 0 ? 'warning' : 'success'
+          )
+          return Number(d.totals.proposals || 0)
+        }
+      } catch {
+        // server không phản hồi -> fallback cục bộ bên dưới
+      }
+
+      // Fallback cục bộ: agent deterministic (thuật toán thật trên dữ liệu local)
+      const clientNameMap = Object.fromEntries(clients.map((c) => [c.id, c.name]))
+      const recs = AIOperationsOrchestrator.runComprehensiveScan(inventory, ppcCampaigns, ppcKeywords, listings, products, clientNameMap)
+      const msg = `Scan cục bộ (server không phản hồi): ${inventory.length} SKUs + ${ppcKeywords.length} từ khóa + ${listings.length} listings -> ${recs.length} kiến nghị`
+      setLastSyncNotice(msg)
+      showToast(`🧠 ${msg}`, 'info')
+      return recs.length
+    } finally {
+      setIsScanning(false)
+    }
   }
 
   // 8. TRIGGER SYNC JOB
