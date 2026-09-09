@@ -22,6 +22,7 @@ import {
   UserRole,
   VeximAgencyKPIs,
   WorkspaceMode,
+  FreightRateCard,
   AlgorithmicBidRule,
   HarvestedSearchTerm,
   CannibalizationAlert,
@@ -74,6 +75,7 @@ import {
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
+import { DEFAULT_RATE_CARDS } from './logistics-engine'
 
 export type ActiveNavTab =
   | 'ai-operations'
@@ -223,6 +225,8 @@ interface AppStateContextType {
   fbaCapacityUsages: FbaCapacityUsage[]
   etaDeviationAlerts: EtaDeviationAlert[]
   spApiQueueStatuses: SpApiQueueStatus[]
+  /** Bảng giá cước vận tải — ưu tiên từ Supabase `freight_rate_cards`, fallback DEFAULT_RATE_CARDS */
+  freightRateCards: FreightRateCard[]
   triggerAutoRemovalOrder: (sku: string) => void
   gradeAndRelabelItem: (id: string, grade: 'GRADE_A_NEW' | 'GRADE_B_LIQUIDATE' | 'GRADE_C_SCRAP', notes: string) => void
   dispatchDrayagePull: (containerId: string) => void
@@ -322,6 +326,9 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const [etaDeviationAlerts, setEtaDeviationAlerts] = useState<EtaDeviationAlert[]>(mockEtaDeviationAlerts)
   const [spApiQueueStatuses, setSpApiQueueStatuses] = useState<SpApiQueueStatus[]>(mockSpApiQueueStatus)
 
+  // Bảng giá cước vận tải (Supabase -> fallback hardcode)
+  const [freightRateCards, setFreightRateCards] = useState<FreightRateCard[]>(DEFAULT_RATE_CARDS)
+
   // Ephemeral UI states
   const [isScanning, setIsScanning] = useState(false)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -361,25 +368,39 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     async function loadLiveSupabaseData() {
       try {
-        const [liveUsers, liveClients, liveProducts] = await Promise.all([
+        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards] = await Promise.all([
           SupabaseDatabaseService.getUsers(),
           SupabaseDatabaseService.getClients(),
           SupabaseDatabaseService.getProducts(),
+          SupabaseDatabaseService.getInventory(),
+          SupabaseDatabaseService.getFreightRateCards(),
         ])
 
-        if (isMounted) {
-          if (liveUsers && liveUsers.length > 0) {
-            setTeamMembers(liveUsers)
-            saveToStorage('vexim_team_members', liveUsers)
-          }
-          if (liveClients && liveClients.length > 0) {
-            setClients(liveClients)
-            saveToStorage('vexim_clients', liveClients)
-          }
-          if (liveProducts && liveProducts.length > 0) {
-            setProducts(liveProducts)
-            saveToStorage('vexim_products', liveProducts)
-          }
+        if (!isMounted) return
+
+        if (liveUsers && liveUsers.length > 0) {
+          setTeamMembers(liveUsers)
+          saveToStorage('vexim_team_members', liveUsers)
+        }
+        if (liveClients && liveClients.length > 0) {
+          setClients(liveClients)
+          saveToStorage('vexim_clients', liveClients)
+          // Guard: nếu selectedClientId (localStorage) không còn tồn tại trong DB -> reset
+          setSelectedClientIdState((prev) =>
+            prev === 'ALL' || liveClients.some((c) => c.id === prev) ? prev : liveClients[0].id
+          )
+        }
+        if (liveProducts && liveProducts.length > 0) {
+          setProducts(liveProducts)
+          saveToStorage('vexim_products', liveProducts)
+        }
+        if (liveInventory && liveInventory.length > 0) {
+          // Tồn kho FBA: DB là nguồn sự thật duy nhất (ghi đè cả localStorage cũ)
+          setInventory(liveInventory)
+          saveToStorage('vexim_inventory', liveInventory)
+        }
+        if (liveRateCards && liveRateCards.length > 0) {
+          setFreightRateCards(liveRateCards)
         }
       } catch (err) {
         console.info('[Vexim State] Running in persistent hybrid mode.')
@@ -1234,6 +1255,28 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       'INVENTORY'
     )
 
+    // 5. GHI VẬN ĐƠN VÀO SUPABASE (bảng inbound_shipments) — nguồn sự thật dài hạn
+    SupabaseDatabaseService.upsertInboundShipment({
+      clientId: item?.clientId,
+      sku,
+      carrierName,
+      billOfLadingNumber,
+      fbaShipmentId,
+      pickupDateTime,
+      etdPort,
+      etaFba,
+      units: item?.supplierReadyQty || item?.recommendedReorderQty || 0,
+      unitCostUsd: item?.unitCostUsd || 0,
+      createdBy: currentUser.fullName,
+    }).then((shipmentCode) => {
+      if (shipmentCode) {
+        console.info(`[Vexim Logistics] Booking ${billOfLadingNumber} đã lưu DB với mã ${shipmentCode}`)
+        showToast(`Đã lưu vận đơn ${shipmentCode} (B/L: ${billOfLadingNumber}) vào Supabase!`, 'success')
+      } else {
+        console.warn('[Vexim Logistics] Không ghi được booking vào Supabase (chỉ lưu local).')
+      }
+    })
+
     showToast(`Đã xác nhận booking tàu & gửi phiếu điều xe tới Chủ xưởng ${client.name}!`, 'success')
   }
 
@@ -1482,6 +1525,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         fbaCapacityUsages,
         etaDeviationAlerts,
         spApiQueueStatuses,
+        freightRateCards,
         triggerAutoRemovalOrder,
         gradeAndRelabelItem,
         dispatchDrayagePull,

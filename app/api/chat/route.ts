@@ -1,4 +1,45 @@
 import { convertToModelMessages, gateway, streamText, type UIMessage } from 'ai'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+
+/**
+ * Lấy bối cảnh SỐNG từ Supabase (tồn kho + clients + giá cước) để đưa vào
+ * system prompt của Copilot. Trả về chuỗi rỗng nếu DB chưa sẵn sàng
+ * (thiếu migration/chính sách) — khi đó Copilot dùng bối cảnh tĩnh mặc định.
+ */
+async function buildLiveDbContext(): Promise<string> {
+  if (!isSupabaseConfigured()) return ''
+  try {
+    const [invRes, clientRes, rateRes] = await Promise.all([
+      supabase.from('inventory').select('sku, title, fba_available, days_of_supply, risk_level, recommended_reorder_qty').order('days_of_supply'),
+      supabase.from('clients').select('name, connection_status').limit(10),
+      supabase.from('freight_rate_cards').select('carrier_partner_name, transport_mode, rate_per_cbm_usd, rate_per_container_usd, rate_per_kg_usd, estimated_transit_days').eq('is_active', true),
+    ])
+
+    const inventory = invRes.data || []
+    if (inventory.length === 0) return ''
+
+    const lines: string[] = ['', '3. DỮ LIỆU SỐNG TỪ SUPABASE (nguồn sự thật tại thời điểm trả lời):', '']
+    lines.push('— Tồn kho FBA (sắp theo ngày còn hàng tăng dần):')
+    for (const row of inventory) {
+      lines.push(
+        `   • ${row.sku} — ${row.title}: còn ${row.fba_available} units, ${row.days_of_supply} ngày tồn kho, rủi ro ${row.risk_level}, đề xuất reorder ${row.recommended_reorder_qty} units.`
+      )
+    }
+    if (clientRes?.data?.length) {
+      lines.push('— Nhà cung cấp đang quản lý: ' + clientRes.data.map((c: any) => c.name).join(', ') + '.')
+    }
+    if (rateRes?.data?.length) {
+      lines.push('— Bảng giá cước hiện hành:')
+      for (const r of rateRes.data) {
+        const rate = r.rate_per_cbm_usd ? `$${r.rate_per_cbm_usd}/CBM` : r.rate_per_container_usd ? `$${r.rate_per_container_usd}/container` : `$${r.rate_per_kg_usd}/kg`
+        lines.push(`   • ${r.carrier_partner_name} (${r.transport_mode}): ${rate}, transit ${r.estimated_transit_days} ngày.`)
+      }
+    }
+    return lines.join('\n')
+  } catch {
+    return ''
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -12,38 +53,44 @@ export async function POST(request: Request) {
     const lastMsg = messages[messages.length - 1]
     const userQuery = lastMsg.parts?.map((p: any) => p.text).join('') || ''
 
+    const liveContext = await buildLiveDbContext()
+
     const systemPrompt = `Bạn là Vexim AI Operations Copilot — Trợ lý vận hành Amazon US chuyên biệt cho các Nhà cung cấp Việt Nam xuất khẩu sang Mỹ thuộc nền tảng Vexim Global.
 
 Bối cảnh hệ thống Vexim hiện tại:
 1. Đang quản lý các Nhà cung cấp Việt Nam:
-   - Vinacacao Organics (Socola Bến Tre & Bột Cacao) — Doanh thu $68,420/tháng (+18.4%), 2,190 đơn hàng, CVR 12.4%, ACOS 23.9%. SKU chủ lực VXM-COCOA-70DK đang còn 168 units (Days of supply: 11.8 ngày - CRITICAL).
-   - An An Herbal Incense (Nhang Trầm & Quế Hà Tĩnh) — Doanh thu $34,150/tháng (+24.2%).
-   - Lotus Craft Vietnam (Ống hút tre & Bát gáo dừa) — Phát hiện khiếu nại an toàn dằm cọ xát môi (Đã khóa AI tự động, chuyển Ops Manager xử lý).
-   - Highlands Cashew Co. (Hạt điều rang muối & ớt W240 - Đang bị chặn Launch do thiếu nhãn cảnh báo FALCPA Allergen Tree Nuts chuẩn FDA).
-   - Tan Viet Wood (Thớt gỗ Teak).
-
+   - Vinacacao Organics (Socola Bến Tre & Bột Cacao) — SKU chủ lực VXM-COCOA-70DK và VXM-COCOA-PWD500.
+   - An An Herbal Incense (Nhang Trầm & Quế Hà Tĩnh).
 2. Nguyên tắc vận hành:
    - Luôn trả lời bằng tiếng Việt chuyên nghiệp, súc tích, logic và có cấu trúc rõ ràng (Bullet points, số liệu cụ thể).
    - Multi-Agent System: Tồn kho (Inventory Agent), Listing (Listing Agent), Quảng cáo (PPC Agent), Sức khỏe tài khoản (Health Agent), Chăm sóc khách hàng (Customer Safety Agent), Tuân thủ pháp lý (Compliance Gatekeeper).
    - Human-in-the-loop: Mọi hành động nhạy cảm (Đổi giá, Sửa ngân sách, Nhập hàng, Trả lời khiếu nại an toàn) đều qua phê duyệt của các Trưởng bộ phận phụ trách.
-   - Khi được hỏi về 3 vấn đề khẩn cấp nhất:
-     1. SKU Socola 70% Vinacacao chỉ còn 11.8 ngày tồn kho (Cần châm hàng 3PL sang FBA).
-     2. Sự cố an toàn khách hàng Lotus Craft (Khóa AI, Human-in-the-loop gọi điện chăm sóc).
-     3. Chặn xuất bản Hạt điều Highlands Cashew do thiếu nhãn cảnh báo dị ứng chuẩn FALCPA của FDA.
+   - Ưu tiên sử dụng số liệu từ mục "DỮ LIỆU SỐNG TỪ SUPABASE" nếu có, thay vì con số mặc định.
+${liveContext}
 `
 
-    try {
-      // Use higher token allowance to prevent reasoning models from hitting length limits
-      const result = streamText({
-        model: gateway('openai/gpt-4o-mini'),
-        system: systemPrompt,
-        messages: await convertToModelMessages(messages),
-        maxOutputTokens: 2500,
-      })
+    // Có API key -> gọi AI thật. Không có key -> phục vụ kịch bản fallback ngay
+    // (streamText không throw đồng bộ khi thiếu key, lỗi chỉ xuất hiện trong stream)
+    const hasAiKey = !!(process.env.AI_GATEWAY_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY)
 
-      return result.toUIMessageStreamResponse()
-    } catch (modelErr) {
-      // Intelligent fallback for environments without external gateway
+    if (hasAiKey) {
+      try {
+        // Use higher token allowance to prevent reasoning models from hitting length limits
+        const result = streamText({
+          model: gateway('openai/gpt-4o-mini'),
+          system: systemPrompt,
+          messages: await convertToModelMessages(messages),
+          maxOutputTokens: 2500,
+        })
+
+        return result.toUIMessageStreamResponse()
+      } catch (modelErr) {
+        console.warn('[Vexim AI] Gateway call failed, using fallback script:', modelErr)
+      }
+    }
+
+    // Intelligent fallback for environments without external gateway
+    {
       let responseText = `Xin chào! Tôi là Vexim AI Operations Copilot. Dưới đây là phân tích từ hệ thống:\n\n`
 
       if (userQuery.toLowerCase().includes('khẩn cấp') || userQuery.toLowerCase().includes('hôm nay') || userQuery.toLowerCase().includes('tóm tắt')) {

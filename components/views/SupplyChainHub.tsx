@@ -55,7 +55,10 @@ export function SupplyChainHub() {
     dispatchDrayagePull,
     submitCapacityBid,
     simulateEtaDeviation,
+    freightRateCards,
   } = useAppState()
+  // Giá cước từ Supabase (freight_rate_cards) — fallback về bảng giá mặc định nếu DB rỗng
+  const rateCards: FreightRateCard[] = freightRateCards.length > 0 ? freightRateCards : DEFAULT_RATE_CARDS
   const [selectedRouteId, setSelectedRouteId] = useState<string>('route-catlai-lax')
   const [activeTab, setActiveTab] = useState<'intake-queue' | 'buffer3pl' | 'reverse-logistics' | 'ior-demurrage' | 'capacity-limits' | 'landedcost' | 'leadtime' | 'geoplacement' | 'webhooks'>('intake-queue')
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
@@ -945,7 +948,7 @@ export function SupplyChainHub() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-1">
                 <span className="text-[10px] font-mono uppercase text-slate-400">Tổng Số Lượng</span>
-                <div className="text-lg font-black text-slate-900">{calculationResult.totalUnits.toLocaleString()} sp</div>
+                <div className="text-lg font-black e-900">{calculationResult.totalUnits.toLocaleString()} sp</div>
                 <span className="text-[10px] text-slate-500">{calculationResult.totalCartons} Thùng</span>
               </div>
 
@@ -1482,6 +1485,7 @@ export function SupplyChainHub() {
         isOpen={isBookingModalOpen}
         onClose={() => setIsBookingModalOpen(false)}
         item={selectedItemForBooking}
+        rateCards={rateCards}
         onConfirm={(data) => {
           confirmShipmentBooking(data)
         }}

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useOutsideClick } from '@/lib/useOutsideClick'
-import { InventoryItem } from '@/lib/types'
+import { InventoryItem, FreightRateCard } from '@/lib/types'
 import { DEFAULT_RATE_CARDS } from '@/lib/logistics-engine'
 import {
   AlertCircle,
@@ -33,6 +33,7 @@ interface VeximBookingConfirmationModalProps {
   isOpen: boolean
   onClose: () => void
   item: InventoryItem | null
+  rateCards?: FreightRateCard[]
   onConfirm: (data: {
     inventoryItemId: string
     sku: string
@@ -51,9 +52,12 @@ export function VeximBookingConfirmationModal({
   isOpen,
   onClose,
   item,
+  rateCards,
   onConfirm,
 }: VeximBookingConfirmationModalProps) {
   const modalRef = useOutsideClick<HTMLDivElement>(onClose, isOpen)
+
+  const carrierOptions: FreightRateCard[] = rateCards && rateCards.length > 0 ? rateCards : DEFAULT_RATE_CARDS
 
   const [carrierName, setCarrierName] = useState<string>('Kerry / Flexport Ocean LCL')
   const [billOfLadingNumber, setBillOfLadingNumber] = useState<string>('KRY-VNM-LAX-8801')
@@ -158,7 +162,7 @@ export function VeximBookingConfirmationModal({
                 onChange={(e) => setCarrierName(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 focus:border-cyan-500 focus:outline-hidden"
               >
-                {DEFAULT_RATE_CARDS.map((rc) => (
+                {carrierOptions.map((rc) => (
                   <option key={rc.id} value={rc.carrierPartnerName}>
                     {rc.carrierPartnerName} ({rc.originPort} &rarr; {rc.destinationPort})
                   </option>

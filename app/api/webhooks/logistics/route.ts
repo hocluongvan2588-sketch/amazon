@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ForwarderWebhookPayload } from '@/lib/types'
+import { SupabaseDatabaseService } from '@/lib/supabase-service'
 
 // ====================================================================
 // VEXIM LOGISTICS & FORWARDER TRACKING WEBHOOK ENDPOINT
 // Endpoint: POST /api/webhooks/logistics
 // Connects: Flexport, Kerry Logistics, Maersk, Unifa, Project44, MarineTraffic
+// Bây giờ GHI SỰ THẬT vào bảng `forwarder_tracking_events` (Supabase).
+// Nếu DB chưa khả dụng (thiếu migration/chính sách) vẫn trả 200 với
+// `persisted: false` để forwarder không phải retry vô hạn.
 // ====================================================================
 
 export async function POST(req: NextRequest) {
@@ -31,7 +35,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 3. Process Event & Log
     const trackingEvent = {
       id: `evt-${Date.now()}`,
       shipmentId: payload.shipmentId || 'VXM-SHP-2026-001',
@@ -43,10 +46,23 @@ export async function POST(req: NextRequest) {
       receivedAt: new Date().toISOString(),
     }
 
+    // 3. PERSIST: ghi event vào Supabase (best-effort)
+    const persisted = await SupabaseDatabaseService.insertTrackingEvent({
+      carrierName: trackingEvent.carrier,
+      trackingNumber: payload.trackingNumber || trackingEvent.shipmentId,
+      eventType: trackingEvent.event,
+      locationName: trackingEvent.location,
+      statusNotesVi: trackingEvent.notesVi,
+      rawPayload: payload as unknown as Record<string, any>,
+    })
+
     // 4. Return success response with processing timestamp
     return NextResponse.json({
       success: true,
-      message: 'Logistics tracking webhook processed successfully',
+      persisted,
+      message: persisted
+        ? 'Logistics tracking webhook processed & saved to Supabase'
+        : 'Webhook processed but DB persistence unavailable (run migration 20260910 & check policies)',
       eventReceived: trackingEvent,
       dispatchedAt: new Date().toISOString(),
     })
@@ -63,6 +79,7 @@ export async function GET() {
   return NextResponse.json({
     status: 'ONLINE',
     endpoint: '/api/webhooks/logistics',
+    persistence: 'forwarder_tracking_events (Supabase)',
     supportedProtocols: ['REST JSON Webhook', 'EDI 214 (Transportation Status)', 'AIS Vessel API'],
     connectedCarriers: ['Kerry Logistics', 'Flexport', 'Maersk Line', 'Unifa Ocean', 'Project44'],
     activeRoutes: ['Cát Lái -> LAX / Long Beach', 'Hải Phòng -> Oakland / Tacoma'],
