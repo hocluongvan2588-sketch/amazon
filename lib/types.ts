@@ -768,3 +768,87 @@ export interface ForwarderWebhookPayload {
   statusNotesVi: string
   temperatureControlledAlert?: boolean
 }
+
+// ====================================================================
+// VEXIM 5 CRITICAL OPERATIONAL EXTENSIONS (V2.1 ARCHITECTURE)
+// ====================================================================
+
+export interface ReverseLogisticsItem {
+  id: string
+  clientId: string
+  sku: string
+  asin: string
+  title: string
+  imageUrl: string
+  unitsReturned: number
+  returnReason: 'DAMAGED_IN_TRANSIT' | 'CUSTOMER_DEFECTIVE' | 'UNSELLABLE_OVERDUE' | 'PACKAGING_TORN'
+  fbaWarehouseOrigin: string // 'ONT8', 'LGB8', 'LAX9'
+  removalOrderId: string
+  status: 'IN_FBA_UNSELLABLE' | 'TRANSIT_TO_3PL' | 'INSPECTED_AT_3PL' | 'RE_INJECTED_FBA' | 'LIQUIDATED' | 'SCRAPPED'
+  grade?: 'GRADE_A_NEW' | 'GRADE_B_LIQUIDATE' | 'GRADE_C_SCRAP'
+  inspectionNotes?: string
+  estimatedValueRecoveryUsd: number
+  relabelCostUsd: number
+  recycledIntoFbaShipmentId?: string
+  updatedAt: string
+}
+
+export interface DemurrageTrackingRecord {
+  id: string
+  clientId: string
+  containerNumber: string
+  billOfLading: string
+  vesselName: string
+  arrivalPort: string // 'Port of Long Beach (LGB)', 'Port of Los Angeles (LAX)'
+  dischargeTimestamp: string
+  lastFreeDayTimestamp: string
+  freeDaysAllowed: number // usually 4-5 days
+  remainingFreeHours: number
+  estimatedDemurrageFeePerDay: number // e.g. $225/day
+  riskLevel: 'SAFE' | 'WARNING' | 'CRITICAL_URGENT'
+  drayageAssignedTrucker: string
+  truckerPhone: string
+  gateOutStatus: 'PENDING_CUSTOMS' | 'READY_FOR_PICKUP' | 'DRAYAGE_EN_ROUTE' | 'PULLED_TO_3PL' | 'EMPTY_RETURNED'
+  iorModel: 'FOREIGN_IOR_BOND' | 'DDP_FORWARDER' | 'VEXIM_LLC_CONSIGNEE'
+}
+
+export interface FbaCapacityUsage {
+  id: string
+  clientId: string
+  storageType: 'STANDARD_SIZE' | 'OVERSIZE' | 'APPAREL'
+  currentUsageCubicFeet: number
+  monthlyLimitCubicFeet: number
+  utilizationPercentage: number
+  nextMonthEstimatedLimitCubicFeet: number
+  biddingStatus: 'NO_BID' | 'BID_SUBMITTED' | 'BID_ACCEPTED'
+  requestedExtraCubicFeet?: number
+  bidPricePerCubicFeet?: number
+  estimatedReservationFeeUsd?: number
+  performanceCreditEligible: boolean
+}
+
+export interface EtaDeviationAlert {
+  id: string
+  shipmentId: string
+  trackingNumber: string
+  carrierName: string
+  vesselName: string
+  originalEta: string
+  updatedEta: string
+  deviationDays: number
+  affectedSkus: string[]
+  automaticActionTriggered: 'NONE' | 'PPC_THROTTLED_30' | '3PL_INJECTION_DISPATCHED' | 'SUPPLIER_ALERTED'
+  status: 'ACTIVE_INTERVENTION' | 'RESOLVED'
+  createdAt: string
+}
+
+export interface SpApiQueueStatus {
+  endpoint: string
+  currentRateLimitPerSec: number
+  activeQueueLength: number
+  tokenBucketCapacity: number
+  retryCount24h: number
+  backoffAverageSeconds: number
+  offlineCacheStatus: 'READY' | 'SYNCING'
+  lastSyncTimestamp: string
+}

@@ -39,9 +39,25 @@ import {
 } from 'lucide-react'
 
 export function SupplyChainHub() {
-  const { dynamicLeadTimeRoutes, geoFbaPlacements, inventory, products, showToast, confirmShipmentBooking } = useAppState()
+  const {
+    dynamicLeadTimeRoutes,
+    geoFbaPlacements,
+    inventory,
+    products,
+    showToast,
+    confirmShipmentBooking,
+    reverseLogisticsItems,
+    demurrageRecords,
+    fbaCapacityUsages,
+    etaDeviationAlerts,
+    triggerAutoRemovalOrder,
+    gradeAndRelabelItem,
+    dispatchDrayagePull,
+    submitCapacityBid,
+    simulateEtaDeviation,
+  } = useAppState()
   const [selectedRouteId, setSelectedRouteId] = useState<string>('route-catlai-lax')
-  const [activeTab, setActiveTab] = useState<'intake-queue' | 'landedcost' | 'leadtime' | 'geoplacement' | 'buffer3pl' | 'webhooks'>('intake-queue')
+  const [activeTab, setActiveTab] = useState<'intake-queue' | 'buffer3pl' | 'reverse-logistics' | 'ior-demurrage' | 'capacity-limits' | 'landedcost' | 'leadtime' | 'geoplacement' | 'webhooks'>('intake-queue')
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
   const [selectedItemForBooking, setSelectedItemForBooking] = useState<any>(null)
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false)
@@ -293,6 +309,48 @@ export function SupplyChainHub() {
         </button>
 
         <button
+          onClick={() => setActiveTab('reverse-logistics')}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            activeTab === 'reverse-logistics'
+              ? 'border-cyan-600 text-cyan-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <RefreshCw size={16} />
+          <span>Xử Lý Hàng Trả (Reverse Logistics)</span>
+          <span className="rounded-full bg-indigo-100 text-indigo-800 px-2 py-0.5 text-[10px] font-bold">
+            {reverseLogisticsItems.length} Lô Hoàn
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('ior-demurrage')}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            activeTab === 'ior-demurrage'
+              ? 'border-cyan-600 text-cyan-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Anchor size={16} />
+          <span>Cảnh Báo Phí Cảng & IOR</span>
+          <span className="rounded-full bg-amber-100 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
+            {demurrageRecords.filter((d) => d.riskLevel === 'WARNING' || d.riskLevel === 'CRITICAL_URGENT').length} Cont Cần Kéo
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('capacity-limits')}
+          className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
+            activeTab === 'capacity-limits'
+              ? 'border-cyan-600 text-cyan-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Layers size={16} />
+          <span>Hạn Ngạch FBA & Đấu Giá Dung Lượng</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('webhooks')}
           className={`flex items-center gap-2 border-b-2 px-5 py-3 text-sm font-semibold transition-colors ${
             activeTab === 'webhooks'
@@ -301,7 +359,7 @@ export function SupplyChainHub() {
           }`}
         >
           <Radio size={16} />
-          <span>Forwarder Webhook & Tracking</span>
+          <span>Tracking Tàu & Độ Lệch ETA</span>
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
         </button>
       </div>
@@ -423,6 +481,590 @@ export function SupplyChainHub() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+            {/* TAB: REVERSE LOGISTICS & UNSELLABLE GRADING */}
+      {activeTab === 'reverse-logistics' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Xử Lý Hàng Hoàn Về & Tái Sinh Giá Trị Sản Phẩm (Reverse Logistics & 3PL Grading)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Quy trình tự động tạo lệnh Removal Order rút hàng Unsellable từ kho Amazon FBA về kho đệm 3PL California &bull; Kiểm định chất lượng Grade A/B/C &bull; Thay vỏ hộp, dán lại tem FNSKU ($0.35/sp) để châm ngược lại FBA hoặc thanh lý thu hồi vốn.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => triggerAutoRemovalOrder('VN-COCOA-ORGANIC-500G')}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:from-indigo-500 hover:to-blue-500 transition-all cursor-pointer"
+              >
+                <Package size={14} />
+                <span>Tạo Lệnh Auto-Removal Rút Về 3PL</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-emerald-800 font-mono">Grade A (Tái Xuất FBA New)</div>
+              <div className="text-2xl font-black text-emerald-950">92.4% <span className="text-xs font-normal text-slate-600">tỷ lệ thu hồi</span></div>
+              <p className="text-[11px] text-emerald-800">Chỉ móp hộp carton ngoài, ruột nguyên vẹn. Dán tem FNSKU mới và bán giá gốc.</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-amber-800 font-mono">Grade B (Thanh Lý Buôn Sỉ)</div>
+              <div className="text-2xl font-black text-amber-950">55.0% <span className="text-xs font-normal text-slate-600">thu hồi vốn</span></div>
+              <p className="text-[11px] text-amber-800">Cấn vỏ/xước nhẹ. Thanh lý cho đối tác sỉ Los Angeles hoặc bán Used - Like New.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-slate-500 font-mono">Grade C (Tiêu Hủy Hợp Pháp)</div>
+              <div className="text-2xl font-black text-slate-900">0% <span className="text-xs font-normal text-slate-600">biên bản COD</span></div>
+              <p className="text-[11px] text-slate-500">Hàng vỡ/hết hạn. Cấp chứng thư Certificate of Destruction để giảm trừ thuế.</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">
+                Danh Sách Lô Hàng Hoàn Unsellable Đang Xử Lý Tại 3PL California
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {reverseLogisticsItems.map((item) => (
+                <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <img src={item.imageUrl} alt={item.title} className="h-12 w-12 rounded-xl object-cover border border-slate-200 shrink-0" />
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-slate-900">{item.sku}</span>
+                        <span className="rounded bg-slate-100 text-slate-700 font-mono px-2 py-0.5 text-[10px]">
+                          Lệnh Rút: {item.removalOrderId} ({item.fbaWarehouseOrigin})
+                        </span>
+                        <span className="rounded-full bg-indigo-100 text-indigo-800 px-2 py-0.5 text-[10px] font-bold">
+                          {item.unitsReturned} sp hoàn về
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-slate-900">{item.title}</div>
+                      <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <strong>Kết quả kiểm định 3PL:</strong> {item.inspectionNotes}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {item.status === 'INSPECTED_AT_3PL' || item.status === 'TRANSIT_TO_3PL' ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => gradeAndRelabelItem(item.id, 'GRADE_A_NEW', 'Đã đổi hộp mới, dán lại tem FNSKU barcode sạch sẽ, đạt chuẩn 100% tái xuất FBA.')}
+                          className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer"
+                        >
+                          ✓ Duyệt Grade A (Tái Xuất FBA)
+                        </button>
+                        <button
+                          onClick={() => gradeAndRelabelItem(item.id, 'GRADE_B_LIQUIDATE', 'Đã chuyển bán thanh lý thu hồi 55% vốn.')}
+                          className="rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900 cursor-pointer"
+                        >
+                          Duyệt Grade B (Thanh Lý)
+                        </button>
+                      </div>
+                    ) : item.status === 'RE_INJECTED_FBA' ? (
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1 text-xs font-bold flex items-center gap-1">
+                        <CheckCircle2 size={13} className="text-emerald-600" />
+                        Đã Châm Ngược Lại FBA (Shipment: {item.recycledIntoFbaShipmentId})
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-100 text-amber-900 px-3 py-1 text-xs font-bold">
+                        Đã Thanh Lý Thu Hồi ${item.estimatedValueRecoveryUsd}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: IOR & DEMURRAGE COUNTDOWN */}
+      {activeTab === 'ior-demurrage' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Quản Lý Pháp Nhân IOR & Bộ Đếm Cảnh Báo Phí Lưu Bãi Cảng (Demurrage & Detention Countdown)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Cảng Los Angeles / Long Beach chỉ cho phép 4-5 ngày Free Time &bull; Phạt $150–$350/ngày nếu quá hạn &bull; Hệ thống tự động đếm ngược giờ miễn phí và cảnh báo hối thúc đội xe kéo container về kho 3PL trước hạn chót.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {demurrageRecords.map((record) => {
+              const isUrgent = record.riskLevel === 'WARNING' || record.riskLevel === 'CRITICAL_URGENT'
+              const isPulled = record.gateOutStatus === 'PULLED_TO_3PL'
+
+              return (
+                <div
+                  key={record.id}
+                  className={`rounded-2xl border p-5 shadow-xs transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white ${
+                    isPulled
+                      ? 'border-emerald-300 bg-emerald-50/20'
+                      : isUrgent
+                      ? 'border-amber-400 ring-2 ring-amber-500/10'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold bg-slate-900 text-white px-2.5 py-0.5 rounded-lg">
+                        Cont #{record.containerNumber}
+                      </span>
+                      <span className="font-mono text-xs font-semibold text-slate-600">
+                        B/L: {record.billOfLading}
+                      </span>
+                      <span className="rounded bg-sky-100 text-sky-800 font-mono font-bold text-[10px] px-2 py-0.5">
+                        Mô hình IOR: {record.iorModel === 'DDP_FORWARDER' ? 'DDP Forwarder Ủy Thác' : 'Foreign IOR Continuous Bond'}
+                      </span>
+                      {isPulled ? (
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 text-[10px]">
+                          ✓ Đã Kéo Về Kho 3PL An Toàn
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 text-[10px] animate-pulse">
+                          ⏳ Còn {record.remainingFreeHours} Giờ Miễn Phí Lưu Bãi
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-800 font-bold">
+                      Cảng đến: <span className="text-indigo-700">{record.arrivalPort}</span> &bull; Tàu: {record.vesselName}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                      <div>
+                        <span className="text-slate-400 text-[10px] block uppercase font-mono">Đơn vị xe tải phụ trách (Drayage Trucker):</span>
+                        <strong className="text-slate-800">{record.drayageAssignedTrucker}</strong>
+                        <div className="text-[11px] text-slate-500 font-mono">SĐT Điều Phối: {record.truckerPhone}</div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[10px] block uppercase font-mono">Hạn chót Free Time (Last Free Day):</span>
+                        <strong className="text-red-700 font-mono text-sm">{new Date(record.lastFreeDayTimestamp).toLocaleString('vi-VN')}</strong>
+                        <div className="text-[10px] text-slate-500">Mức phạt quá hạn: ${record.estimatedDemurrageFeePerDay}/ngày</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPulled ? (
+                      <span className="text-xs font-bold text-emerald-700">Đã tránh $675 phí phạt bãi</span>
+                    ) : (
+                      <button
+                        onClick={() => dispatchDrayagePull(record.id)}
+                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all cursor-pointer"
+                      >
+                        <Truck size={14} />
+                        <span>Kéo Cont Về 3PL (Cứu Phí Cảng)</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: CAPACITY LIMITS & BIDDING */}
+      {activeTab === 'capacity-limits' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Quản Lý Hạn Ngạch Lưu Kho FBA & Đấu Giá Dung Lượng (FBA Capacity Limits & Manager Bidding)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Amazon cấp hạn ngạch theo Cubic Feet ($ft^3$) &bull; Tích hợp công cụ đấu giá dung lượng (Capacity Bidding) để mở thêm hạn ngạch nhập hàng mùa cao điểm Q4 &bull; Tự động hoàn 100% phí cọc qua Performance Credits khi bán tốt.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {fbaCapacityUsages.map((cap) => (
+              <div key={cap.id} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-blue-100 text-blue-900 font-mono font-bold px-2 py-0.5 text-xs">
+                      {cap.storageType}
+                    </span>
+                    <span className="text-xs text-slate-500">Loại lưu kho Amazon US</span>
+                  </div>
+                  <span className="text-xs font-bold font-mono text-slate-800">
+                    {cap.currentUsageCubicFeet.toLocaleString()} / {cap.monthlyLimitCubicFeet.toLocaleString()} ft³ ({cap.utilizationPercentage}%)
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      cap.utilizationPercentage > 85 ? 'bg-red-500' : cap.utilizationPercentage > 75 ? 'bg-amber-500' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(100, cap.utilizationPercentage)}%` }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Dung lượng còn trống:</span>
+                    <strong className="text-emerald-700 text-sm font-mono">
+                      +{(cap.monthlyLimitCubicFeet - cap.currentUsageCubicFeet).toLocaleString()} ft³
+                    </strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Dự kiến tháng sau:</span>
+                    <strong className="text-slate-800 text-sm font-mono">
+                      ~{cap.nextMonthEstimatedLimitCubicFeet.toLocaleString()} ft³
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Capacity Bidding Box */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-blue-600" />
+                      Đấu Giá Xin Thêm Dung Lượng (Capacity Bid):
+                    </span>
+                    {cap.biddingStatus === 'BID_SUBMITTED' && (
+                      <span className="rounded-full bg-blue-200 text-blue-900 font-bold px-2 py-0.5 text-[10px]">
+                        ✓ Đã Nộp Bid (+{cap.requestedExtraCubicFeet} ft³)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => submitCapacityBid(cap.storageType, 450, 0.15)}
+                      disabled={cap.biddingStatus === 'BID_SUBMITTED'}
+                      className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2 text-xs transition-colors cursor-pointer"
+                    >
+                      {cap.biddingStatus === 'BID_SUBMITTED'
+                        ? `Đang Chờ Amazon Phê Duyệt (+${cap.requestedExtraCubicFeet} ft³ @ $${cap.bidPricePerCubicFeet}/ft³)`
+                        : `Nộp Bid Xin Thêm +450 ft³ ($0.15/ft³)`}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-blue-800 block">
+                    Đủ điều kiện nhận Performance Credits hoàn 100% chi phí khi đạt target doanh thu.
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+            {/* TAB: REVERSE LOGISTICS & UNSELLABLE GRADING */}
+      {activeTab === 'reverse-logistics' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-indigo-600 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Xử Lý Hàng Hoàn Về & Tái Sinh Giá Trị Sản Phẩm (Reverse Logistics & 3PL Grading)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Quy trình tự động tạo lệnh Removal Order rút hàng Unsellable từ kho Amazon FBA về kho đệm 3PL California &bull; Kiểm định chất lượng Grade A/B/C &bull; Thay vỏ hộp, dán lại tem FNSKU ($0.35/sp) để châm ngược lại FBA hoặc thanh lý thu hồi vốn.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => triggerAutoRemovalOrder('VN-COCOA-ORGANIC-500G')}
+                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:from-indigo-500 hover:to-blue-500 transition-all cursor-pointer"
+              >
+                <Package size={14} />
+                <span>Tạo Lệnh Auto-Removal Rút Về 3PL</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-emerald-800 font-mono">Grade A (Tái Xuất FBA New)</div>
+              <div className="text-2xl font-black text-emerald-950">92.4% <span className="text-xs font-normal text-slate-600">tỷ lệ thu hồi</span></div>
+              <p className="text-[11px] text-emerald-800">Chỉ móp hộp carton ngoài, ruột nguyên vẹn. Dán tem FNSKU mới và bán giá gốc.</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-amber-800 font-mono">Grade B (Thanh Lý Buôn Sỉ)</div>
+              <div className="text-2xl font-black text-amber-950">55.0% <span className="text-xs font-normal text-slate-600">thu hồi vốn</span></div>
+              <p className="text-[11px] text-amber-800">Cấn vỏ/xước nhẹ. Thanh lý cho đối tác sỉ Los Angeles hoặc bán Used - Like New.</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-1">
+              <div className="text-[10px] font-bold uppercase text-slate-500 font-mono">Grade C (Tiêu Hủy Hợp Pháp)</div>
+              <div className="text-2xl font-black text-slate-900">0% <span className="text-xs font-normal text-slate-600">biên bản COD</span></div>
+              <p className="text-[11px] text-slate-500">Hàng vỡ/hết hạn. Cấp chứng thư Certificate of Destruction để giảm trừ thuế.</p>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">
+                Danh Sách Lô Hàng Hoàn Unsellable Đang Xử Lý Tại 3PL California
+              </h3>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {reverseLogisticsItems.map((item) => (
+                <div key={item.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/60 transition-colors">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <img src={item.imageUrl} alt={item.title} className="h-12 w-12 rounded-xl object-cover border border-slate-200 shrink-0" />
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-bold text-slate-900">{item.sku}</span>
+                        <span className="rounded bg-slate-100 text-slate-700 font-mono px-2 py-0.5 text-[10px]">
+                          Lệnh Rút: {item.removalOrderId} ({item.fbaWarehouseOrigin})
+                        </span>
+                        <span className="rounded-full bg-indigo-100 text-indigo-800 px-2 py-0.5 text-[10px] font-bold">
+                          {item.unitsReturned} sp hoàn về
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-slate-900">{item.title}</div>
+                      <div className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        <strong>Kết quả kiểm định 3PL:</strong> {item.inspectionNotes}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {item.status === 'INSPECTED_AT_3PL' || item.status === 'TRANSIT_TO_3PL' ? (
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => gradeAndRelabelItem(item.id, 'GRADE_A_NEW', 'Đã đổi hộp mới, dán lại tem FNSKU barcode sạch sẽ, đạt chuẩn 100% tái xuất FBA.')}
+                          className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white shadow-xs cursor-pointer"
+                        >
+                          ✓ Duyệt Grade A (Tái Xuất FBA)
+                        </button>
+                        <button
+                          onClick={() => gradeAndRelabelItem(item.id, 'GRADE_B_LIQUIDATE', 'Đã chuyển bán thanh lý thu hồi 55% vốn.')}
+                          className="rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-900 cursor-pointer"
+                        >
+                          Duyệt Grade B (Thanh Lý)
+                        </button>
+                      </div>
+                    ) : item.status === 'RE_INJECTED_FBA' ? (
+                      <span className="rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 px-3 py-1 text-xs font-bold flex items-center gap-1">
+                        <CheckCircle2 size={13} className="text-emerald-600" />
+                        Đã Châm Ngược Lại FBA (Shipment: {item.recycledIntoFbaShipmentId})
+                      </span>
+                    ) : (
+                      <span className="rounded-full bg-amber-100 text-amber-900 px-3 py-1 text-xs font-bold">
+                        Đã Thanh Lý Thu Hồi ${item.estimatedValueRecoveryUsd}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB: IOR & DEMURRAGE COUNTDOWN */}
+      {activeTab === 'ior-demurrage' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Quản Lý Pháp Nhân IOR & Bộ Đếm Cảnh Báo Phí Lưu Bãi Cảng (Demurrage & Detention Countdown)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Cảng Los Angeles / Long Beach chỉ cho phép 4-5 ngày Free Time &bull; Phạt $150–$350/ngày nếu quá hạn &bull; Hệ thống tự động đếm ngược giờ miễn phí và cảnh báo hối thúc đội xe kéo container về kho 3PL trước hạn chót.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {demurrageRecords.map((record) => {
+              const isUrgent = record.riskLevel === 'WARNING' || record.riskLevel === 'CRITICAL_URGENT'
+              const isPulled = record.gateOutStatus === 'PULLED_TO_3PL'
+
+              return (
+                <div
+                  key={record.id}
+                  className={`rounded-2xl border p-5 shadow-xs transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white ${
+                    isPulled
+                      ? 'border-emerald-300 bg-emerald-50/20'
+                      : isUrgent
+                      ? 'border-amber-400 ring-2 ring-amber-500/10'
+                      : 'border-slate-200'
+                  }`}
+                >
+                  <div className="space-y-2 flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-xs font-bold bg-slate-900 text-white px-2.5 py-0.5 rounded-lg">
+                        Cont #{record.containerNumber}
+                      </span>
+                      <span className="font-mono text-xs font-semibold text-slate-600">
+                        B/L: {record.billOfLading}
+                      </span>
+                      <span className="rounded bg-sky-100 text-sky-800 font-mono font-bold text-[10px] px-2 py-0.5">
+                        Mô hình IOR: {record.iorModel === 'DDP_FORWARDER' ? 'DDP Forwarder Ủy Thác' : 'Foreign IOR Continuous Bond'}
+                      </span>
+                      {isPulled ? (
+                        <span className="rounded-full bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 text-[10px]">
+                          ✓ Đã Kéo Về Kho 3PL An Toàn
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 text-amber-900 font-bold px-2.5 py-0.5 text-[10px] animate-pulse">
+                          ⏳ Còn {record.remainingFreeHours} Giờ Miễn Phí Lưu Bãi
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="text-xs text-slate-800 font-bold">
+                      Cảng đến: <span className="text-indigo-700">{record.arrivalPort}</span> &bull; Tàu: {record.vesselName}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+                      <div>
+                        <span className="text-slate-400 text-[10px] block uppercase font-mono">Đơn vị xe tải phụ trách (Drayage Trucker):</span>
+                        <strong className="text-slate-800">{record.drayageAssignedTrucker}</strong>
+                        <div className="text-[11px] text-slate-500 font-mono">SĐT Điều Phối: {record.truckerPhone}</div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-[10px] block uppercase font-mono">Hạn chót Free Time (Last Free Day):</span>
+                        <strong className="text-red-700 font-mono text-sm">{new Date(record.lastFreeDayTimestamp).toLocaleString('vi-VN')}</strong>
+                        <div className="text-[10px] text-slate-500">Mức phạt quá hạn: ${record.estimatedDemurrageFeePerDay}/ngày</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {isPulled ? (
+                      <span className="text-xs font-bold text-emerald-700">Đã tránh $675 phí phạt bãi</span>
+                    ) : (
+                      <button
+                        onClick={() => dispatchDrayagePull(record.id)}
+                        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all cursor-pointer"
+                      >
+                        <Truck size={14} />
+                        <span>Kéo Cont Về 3PL (Cứu Phí Cảng)</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: CAPACITY LIMITS & BIDDING */}
+      {activeTab === 'capacity-limits' && (
+        <div className="space-y-4">
+          <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="h-2 w-2 rounded-full bg-blue-600 animate-pulse" />
+                <h2 className="text-base font-bold text-slate-900">
+                  Quản Lý Hạn Ngạch Lưu Kho FBA & Đấu Giá Dung Lượng (FBA Capacity Limits & Manager Bidding)
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 max-w-3xl">
+                Amazon cấp hạn ngạch theo Cubic Feet ($ft^3$) &bull; Tích hợp công cụ đấu giá dung lượng (Capacity Bidding) để mở thêm hạn ngạch nhập hàng mùa cao điểm Q4 &bull; Tự động hoàn 100% phí cọc qua Performance Credits khi bán tốt.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {fbaCapacityUsages.map((cap) => (
+              <div key={cap.id} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded bg-blue-100 text-blue-900 font-mono font-bold px-2 py-0.5 text-xs">
+                      {cap.storageType}
+                    </span>
+                    <span className="text-xs text-slate-500">Loại lưu kho Amazon US</span>
+                  </div>
+                  <span className="text-xs font-bold font-mono text-slate-800">
+                    {cap.currentUsageCubicFeet.toLocaleString()} / {cap.monthlyLimitCubicFeet.toLocaleString()} ft³ ({cap.utilizationPercentage}%)
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      cap.utilizationPercentage > 85 ? 'bg-red-500' : cap.utilizationPercentage > 75 ? 'bg-amber-500' : 'bg-blue-600'
+                    }`}
+                    style={{ width: `${Math.min(100, cap.utilizationPercentage)}%` }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Dung lượng còn trống:</span>
+                    <strong className="text-emerald-700 text-sm font-mono">
+                      +{(cap.monthlyLimitCubicFeet - cap.currentUsageCubicFeet).toLocaleString()} ft³
+                    </strong>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] text-slate-400 block uppercase font-mono">Dự kiến tháng sau:</span>
+                    <strong className="text-slate-800 text-sm font-mono">
+                      ~{cap.nextMonthEstimatedLimitCubicFeet.toLocaleString()} ft³
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Capacity Bidding Box */}
+                <div className="rounded-xl border border-blue-200 bg-blue-50/50 p-3.5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-blue-600" />
+                      Đấu Giá Xin Thêm Dung Lượng (Capacity Bid):
+                    </span>
+                    {cap.biddingStatus === 'BID_SUBMITTED' && (
+                      <span className="rounded-full bg-blue-200 text-blue-900 font-bold px-2 py-0.5 text-[10px]">
+                        ✓ Đã Nộp Bid (+{cap.requestedExtraCubicFeet} ft³)
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => submitCapacityBid(cap.storageType, 450, 0.15)}
+                      disabled={cap.biddingStatus === 'BID_SUBMITTED'}
+                      className="w-full rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold py-2 text-xs transition-colors cursor-pointer"
+                    >
+                      {cap.biddingStatus === 'BID_SUBMITTED'
+                        ? `Đang Chờ Amazon Phê Duyệt (+${cap.requestedExtraCubicFeet} ft³ @ $${cap.bidPricePerCubicFeet}/ft³)`
+                        : `Nộp Bid Xin Thêm +450 ft³ ($0.15/ft³)`}
+                    </button>
+                  </div>
+                  <span className="text-[10px] text-blue-800 block">
+                    Đủ điều kiện nhận Performance Credits hoàn 100% chi phí khi đạt target doanh thu.
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

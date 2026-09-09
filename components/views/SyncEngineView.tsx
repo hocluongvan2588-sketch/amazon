@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 export function SyncEngineView() {
-  const { syncJobs, triggerSyncJob, isSyncing, clients, selectedClientId, connectAmazonAccount } = useAppState()
+  const { syncJobs, triggerSyncJob, isSyncing, clients, selectedClientId, connectAmazonAccount, spApiQueueStatuses, showToast } = useAppState()
   const activeClient = clients.find((c) => c.id === selectedClientId)
 
   return (
@@ -102,6 +102,148 @@ export function SyncEngineView() {
             <div className="font-bold text-slate-800">142 ms (AWS us-east-1)</div>
             <p className="text-[10px] text-slate-500">Kết nối trực tiếp hạ tầng Selling Partner API Bắc Mỹ.</p>
           </div>
+        </div>
+      </div>
+
+      {/* SP-API Rate-Limit Token Bucket Queue & Offline Label Cache */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Token Bucket Queue */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
+                SP-API Token Bucket Queue & Rate Limit Guard
+              </h3>
+            </div>
+            <span className="rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[10px] font-mono">
+              0 Throttling Errors (429)
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Thuật toán Exponential Backoff & Jitter tự động điều tiết tần suất request:
+          </p>
+
+          <div className="space-y-2 text-xs">
+            {spApiQueueStatuses.map((q) => (
+              <div key={q.endpoint} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="font-mono font-bold text-slate-800">{q.endpoint}</div>
+                  <div className="text-[10px] text-slate-400">Tốc độ tối đa: {q.currentRateLimitPerSec} req/sec &bull; Bucket: {q.tokenBucketCapacity} tokens</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono text-emerald-600 font-bold">Backoff: ~{q.backoffAverageSeconds}s</span>
+                  <span className="text-[10px] text-slate-400 block">Queue: {q.activeQueueLength} job</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Offline Barcode & Label Cache */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
+                Bộ Nhớ Đệm Tem Nhãn Offline (Offline Label Cache)
+              </h3>
+            </div>
+            <span className="rounded bg-blue-100 text-blue-900 font-bold px-2 py-0.5 text-[10px] font-mono">
+              🟢 ONLINE READY
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Bảo vệ dây chuyền đóng gói tại nhà máy Việt Nam: Toàn bộ mã FNSKU Code 128 & Box Labels được Pre-rendered vector PDF lưu trữ trên PostgreSQL/Supabase.
+          </p>
+
+          <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-xs space-y-1.5">
+            <div className="flex justify-between font-bold text-blue-950">
+              <span>Trạng thái Cache cục bộ:</span>
+              <span>100% SKUs Cached (3/3 Active)</span>
+            </div>
+            <p className="text-[11px] text-blue-800">
+              Ngay cả khi Amazon SP-API bị mất kết nối hoặc bảo trì, xưởng vẫn in được tem xuất hàng bình thường.
+            </p>
+          </div>
+
+          <button
+            onClick={() => showToast('Đã làm mới và đồng bộ 100% bộ nhớ đệm Offline Barcode Cache!', 'success')}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-2 text-xs font-bold text-slate-700 transition-colors"
+          >
+            Làm Mới Bộ Nhớ Đệm Offline Tem Nhãn
+          </button>
+        </div>
+      </div>
+
+      {/* SP-API Rate-Limit Token Bucket Queue & Offline Label Cache */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Token Bucket Queue */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
+                SP-API Token Bucket Queue & Rate Limit Guard
+              </h3>
+            </div>
+            <span className="rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[10px] font-mono">
+              0 Throttling Errors (429)
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Thuật toán Exponential Backoff & Jitter tự động điều tiết tần suất request:
+          </p>
+
+          <div className="space-y-2 text-xs">
+            {spApiQueueStatuses.map((q) => (
+              <div key={q.endpoint} className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
+                <div>
+                  <div className="font-mono font-bold text-slate-800">{q.endpoint}</div>
+                  <div className="text-[10px] text-slate-400">Tốc độ tối đa: {q.currentRateLimitPerSec} req/sec &bull; Bucket: {q.tokenBucketCapacity} tokens</div>
+                </div>
+                <div className="text-right">
+                  <span className="font-mono text-emerald-600 font-bold">Backoff: ~{q.backoffAverageSeconds}s</span>
+                  <span className="text-[10px] text-slate-400 block">Queue: {q.activeQueueLength} job</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Offline Barcode & Label Cache */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono">
+                Bộ Nhớ Đệm Tem Nhãn Offline (Offline Label Cache)
+              </h3>
+            </div>
+            <span className="rounded bg-blue-100 text-blue-900 font-bold px-2 py-0.5 text-[10px] font-mono">
+              🟢 ONLINE READY
+            </span>
+          </div>
+          <p className="text-xs text-slate-500">
+            Bảo vệ dây chuyền đóng gói tại nhà máy Việt Nam: Toàn bộ mã FNSKU Code 128 & Box Labels được Pre-rendered vector PDF lưu trữ trên PostgreSQL/Supabase.
+          </p>
+
+          <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 text-xs space-y-1.5">
+            <div className="flex justify-between font-bold text-blue-950">
+              <span>Trạng thái Cache cục bộ:</span>
+              <span>100% SKUs Cached (3/3 Active)</span>
+            </div>
+            <p className="text-[11px] text-blue-800">
+              Ngay cả khi Amazon SP-API bị mất kết nối hoặc bảo trì, xưởng vẫn in được tem xuất hàng bình thường.
+            </p>
+          </div>
+
+          <button
+            onClick={() => showToast('Đã làm mới và đồng bộ 100% bộ nhớ đệm Offline Barcode Cache!', 'success')}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 py-2 text-xs font-bold text-slate-700 transition-colors"
+          >
+            Làm Mới Bộ Nhớ Đệm Offline Tem Nhãn
+          </button>
         </div>
       </div>
 
