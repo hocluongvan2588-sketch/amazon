@@ -101,7 +101,19 @@ Amazon không công bố mã nguồn/hash nội bộ của thuật toán tìm ki
 | `lib/keyword-gap.ts` | Đầu vào sharedTopKeywords của CompetitorReverseAsins: score mỗi từ khóa = searchVolume × (đối thủ rank tốt & mình rank kém) × hệ số intent (có "buy/for/best"…). Xuất danh sách Contextual/High-Intent keywords đề xuất chèn title/bullets/backend. |
 | API + UI | `POST /api/listing/score`; nút **"Chấm điểm SEO Listing"** trong Listing Management: hiện score radar + issues + suggestions; sửa bug bytes; lưu lịch sử vào `listing_scores_history`. |
 
-### Sprint 3.3 — FBA Forecast + Capacity Bid Suggestion (~2 ngày dev)
+### Sprint 3.3 — FBA Forecast + Capacity Bid Suggestion ✅ HOÀN THÀNH (2026-09-09)
+
+| Hạng mục | File | Trạng thái |
+|---|---|---|
+| Velocity trọng số 50/30/20 (7/14/30d) + cờ fallback khi thiếu 14d | `lib/forecast-engine.ts` | ✅ Test: 70DK → 14.2/13.5*/12.8 → weighted 13.71 |
+| Days of Supply thời gian thực + ngày đứt hàng + risk ladder (14/21/30) | `lib/forecast-engine.ts` | ✅ Test: 168 ÷ 13.71 = 12.3 ngày → CRITICAL, đứt 21/09 (khác con số tĩnh 11.8 trong DB — đúng nghĩa live) |
+| ft³ cần mua Q4: velocity × 1.65 × 45 ngày × ft³/unit × safety 1.15 | `lib/forecast-engine.ts` | ✅ Test: PWD500 → +78 ft³ |
+| Mức bid $/ft³ tối ưu (tham chiếu thị trường $0.20, trần 50% biên/ft³, sàn $0.10) | `lib/forecast-engine.ts` | ✅ Test: $0.20/ft³, tổng phí $15.8 — còn cảnh báo biên mỏng |
+| Migration `daily_velocity_14d` + backfill nội suy tuyến tính | `supabase/migrations/20260912_forecast_capacity.sql` | ✅ (chạy trong Supabase để có 14d chính xác) |
+| API /api/inventory/forecast (DATABASE_LIVE → mock fallback có cờ) | `app/api/inventory/forecast/route.ts` | ✅ |
+| UI: bảng DoS live + thẻ đề xuất bid + nút "Dùng gợi ý để Nộp Bid" | `components/views/ForecastCapacityPanel.tsx` | ✅ Gắn đầu tab Hạn Ngạch FBA & Đấu Giá |
+
+### Sprint 3.3 — KẾ HOẠCH GỐC (~2 ngày dev)
 
 | Việc | Chi tiết |
 |---|---|
