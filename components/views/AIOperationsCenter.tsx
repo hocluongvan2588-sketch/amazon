@@ -1,10 +1,9 @@
 'use client'
 
-import { FormattedText } from "@/components/FormattedText"
-
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { FormattedText } from '@/components/FormattedText'
 import { useAppState } from '@/lib/state-context'
-import { AIAgentType, AIRecommendation, AIRecommendationPriority } from '@/lib/types'
+import { AIAgentType, AIRecommendation, AIRecommendationPriority, UserRole } from '@/lib/types'
 import {
   AlertCircle,
   AlertOctagon,
@@ -15,10 +14,12 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Crown,
   Eye,
   FileText,
   Filter,
   Flame,
+  Gavel,
   HeartPulse,
   Megaphone,
   MessageSquareWarning,
@@ -26,13 +27,19 @@ import {
   Play,
   RefreshCw,
   Scale,
+  ShieldAlert,
   ShieldCheck,
+  Ship,
   Sparkles,
+  Target,
   TrendingDown,
   TrendingUp,
+  User,
   X,
   Zap,
 } from 'lucide-react'
+
+type DepartmentPillar = 'ALL' | 'PPC' | 'SUPPLY_CHAIN' | 'BRAND_CX' | 'COMPLIANCE'
 
 export function AIOperationsCenter() {
   const {
@@ -47,23 +54,68 @@ export function AIOperationsCenter() {
     currentRole,
   } = useAppState()
 
+  // Default department pillar based on current active role
+  const getDefaultPillar = (role: UserRole): DepartmentPillar => {
+    switch (role) {
+      case 'PPC_SPECIALIST':
+        return 'PPC'
+      case 'SUPPLY_CHAIN_SPECIALIST':
+        return 'SUPPLY_CHAIN'
+      case 'BRAND_CS_SPECIALIST':
+        return 'BRAND_CX'
+      case 'COMPLIANCE_SPECIALIST':
+        return 'COMPLIANCE'
+      default:
+        return 'ALL'
+    }
+  }
+
+  const [activePillar, setActivePillar] = useState<DepartmentPillar>(getDefaultPillar(currentRole))
   const [selectedAgent, setSelectedAgent] = useState<AIAgentType | 'ALL'>('ALL')
   const [selectedPriority, setSelectedPriority] = useState<AIRecommendationPriority | 'ALL'>('ALL')
   const [selectedStatus, setSelectedStatus] = useState<'PENDING_APPROVAL' | 'APPROVED' | 'EXECUTED' | 'ALL'>('PENDING_APPROVAL')
 
-  // Filter recommendations
+  // Sync active pillar if role changes
+  useEffect(() => {
+    setActivePillar(getDefaultPillar(currentRole))
+  }, [currentRole])
+
+  // Map pillar to agent types
+  const isAgentInPillar = (agentType: AIAgentType, pillar: DepartmentPillar): boolean => {
+    switch (pillar) {
+      case 'PPC':
+        return ['PPC', 'PROMOTION', 'SALES'].includes(agentType)
+      case 'SUPPLY_CHAIN':
+        return ['INVENTORY', 'SALES'].includes(agentType)
+      case 'BRAND_CX':
+        return ['LISTING', 'CUSTOMER', 'SALES'].includes(agentType)
+      case 'COMPLIANCE':
+        return ['COMPLIANCE', 'ACCOUNT_HEALTH', 'CUSTOMER'].includes(agentType)
+      case 'ALL':
+      default:
+        return true
+    }
+  }
+
+  // Filter recommendations based on Role & Selected Department Pillar
   const displayedRecs = filteredRecommendations.filter((rec) => {
+    // 1. Department Pillar filter
+    if (!isAgentInPillar(rec.agentType, activePillar)) return false
+    // 2. Specific agent filter
     if (selectedAgent !== 'ALL' && rec.agentType !== selectedAgent) return false
+    // 3. Priority filter
     if (selectedPriority !== 'ALL' && rec.priority !== selectedPriority) return false
+    // 4. Status filter
     if (selectedStatus !== 'ALL' && rec.status !== selectedStatus) return false
     return true
   })
 
-  // Priority counts
-  const criticalCount = filteredRecommendations.filter((r) => r.priority === 'CRITICAL' && r.status === 'PENDING_APPROVAL').length
-  const highCount = filteredRecommendations.filter((r) => r.priority === 'HIGH' && r.status === 'PENDING_APPROVAL').length
-  const opportunityCount = filteredRecommendations.filter((r) => r.priority === 'OPPORTUNITY' && r.status === 'PENDING_APPROVAL').length
-  const pendingCount = filteredRecommendations.filter((r) => r.status === 'PENDING_APPROVAL').length
+  // Priority counts within current pillar
+  const pillarRecs = filteredRecommendations.filter((r) => isAgentInPillar(r.agentType, activePillar))
+  const criticalCount = pillarRecs.filter((r) => r.priority === 'CRITICAL' && r.status === 'PENDING_APPROVAL').length
+  const highCount = pillarRecs.filter((r) => r.priority === 'HIGH' && r.status === 'PENDING_APPROVAL').length
+  const opportunityCount = pillarRecs.filter((r) => r.priority === 'OPPORTUNITY' && r.status === 'PENDING_APPROVAL').length
+  const pendingCount = pillarRecs.filter((r) => r.status === 'PENDING_APPROVAL').length
 
   const getAgentBadge = (agent: AIAgentType) => {
     switch (agent) {
@@ -88,6 +140,22 @@ export function AIOperationsCenter() {
     }
   }
 
+  const getAssigneeInfo = (rec: AIRecommendation) => {
+    if (rec.agentType === 'PPC' || rec.agentType === 'PROMOTION' || rec.title.toLowerCase().includes('bid')) {
+      return { name: 'Lương Hoàng Minh', role: 'PPC & Growth Lead', badgeColor: 'bg-purple-100 text-purple-800' }
+    }
+    if (rec.agentType === 'INVENTORY' || rec.title.toLowerCase().includes('tồn kho') || rec.title.toLowerCase().includes('lead time')) {
+      return { name: 'Ánh Nguyễn', role: 'Logistics & FBA Lead', badgeColor: 'bg-cyan-100 text-cyan-800' }
+    }
+    if (rec.agentType === 'LISTING' || (rec.agentType === 'CUSTOMER' && !rec.title.toLowerCase().includes('khẩn cấp'))) {
+      return { name: 'Trần Thu Hà', role: 'Brand & Listing Lead', badgeColor: 'bg-blue-100 text-blue-800' }
+    }
+    if (rec.agentType === 'COMPLIANCE' || rec.agentType === 'ACCOUNT_HEALTH' || rec.title.toLowerCase().includes('dị ứng') || rec.title.toLowerCase().includes('fda')) {
+      return { name: 'Lê Hoàng Nam', role: 'Legal & Compliance Lead', badgeColor: 'bg-rose-100 text-rose-800' }
+    }
+    return { name: 'Nguyễn Tuấn Anh', role: 'Amazon Operations Director', badgeColor: 'bg-slate-100 text-slate-800' }
+  }
+
   const getPriorityStyle = (priority: AIRecommendationPriority) => {
     switch (priority) {
       case 'CRITICAL':
@@ -95,31 +163,33 @@ export function AIOperationsCenter() {
           pill: 'bg-red-500 text-white',
           border: 'border-red-200 bg-red-50/20',
           indicator: 'bg-red-500',
-          badge: '🔴 CRITICAL',
+          badge: '🔴 NGUY CẤP',
         }
       case 'HIGH':
         return {
           pill: 'bg-amber-500 text-white',
           border: 'border-amber-200 bg-amber-50/20',
           indicator: 'bg-amber-500',
-          badge: '🟠 HIGH PRIORITY',
+          badge: '🟠 ƯU TIÊN CAO',
         }
       case 'OPPORTUNITY':
         return {
           pill: 'bg-emerald-600 text-white',
           border: 'border-emerald-200 bg-emerald-50/20',
           indicator: 'bg-emerald-500',
-          badge: '🟢 OPPORTUNITY',
+          badge: '🟢 CƠ HỘI TĂNG TRƯỞNG',
         }
       default:
         return {
           pill: 'bg-slate-500 text-white',
           border: 'border-slate-200 bg-white',
           indicator: 'bg-slate-400',
-          badge: '⚪ LOW',
+          badge: '⚪ TIÊU CHUẨN',
         }
     }
   }
+
+  const isExecutiveRole = ['SUPER_ADMIN', 'OPS_MANAGER', 'ACCOUNT_EXECUTIVE'].includes(currentRole)
 
   return (
     <div className="space-y-6">
@@ -136,7 +206,7 @@ export function AIOperationsCenter() {
             Trung tâm AI Operations
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Phân tích tự động đa tác nhân (Multi-Agent) • Kiểm soát chặt chẽ với Human-in-the-loop Approval Workflow.
+            Phân quyền chuyên sâu theo 4 bộ phận • Kiểm soát chặt chẽ với Human-in-the-loop Approval Workflow.
           </p>
         </div>
 
@@ -144,13 +214,75 @@ export function AIOperationsCenter() {
           <button
             onClick={() => runAiFullScan()}
             disabled={isScanning}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={isScanning ? 'animate-spin' : ''} />
             <span>{isScanning ? 'Đang chạy phân tích...' : 'Quét lại toàn bộ hệ thống'}</span>
           </button>
         </div>
       </div>
+
+      {/* DEPARTMENT PILLAR SELECTOR TABS (Role-Segregated Navigation) */}
+      {isExecutiveRole ? (
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1 flex items-center gap-1">
+            <Crown size={14} className="text-purple-600" />
+            Phân hệ:
+          </span>
+          {[
+            { id: 'ALL', label: 'Toàn Cơ Quan (Master View)', icon: Crown, count: filteredRecommendations.filter((r) => r.status === 'PENDING_APPROVAL').length },
+            { id: 'PPC', label: 'Team PPC & Growth (Minh)', icon: Zap, count: filteredRecommendations.filter((r) => isAgentInPillar(r.agentType, 'PPC') && r.status === 'PENDING_APPROVAL').length },
+            { id: 'SUPPLY_CHAIN', label: 'Team Kho Vận & FBA (Ánh)', icon: Ship, count: filteredRecommendations.filter((r) => isAgentInPillar(r.agentType, 'SUPPLY_CHAIN') && r.status === 'PENDING_APPROVAL').length },
+            { id: 'BRAND_CX', label: 'Team Brand & CS (Hà)', icon: Target, count: filteredRecommendations.filter((r) => isAgentInPillar(r.agentType, 'BRAND_CX') && r.status === 'PENDING_APPROVAL').length },
+            { id: 'COMPLIANCE', label: 'Team Pháp Lý & FDA (Nam)', icon: Gavel, count: filteredRecommendations.filter((r) => isAgentInPillar(r.agentType, 'COMPLIANCE') && r.status === 'PENDING_APPROVAL').length },
+          ].map((pillar) => (
+            <button
+              key={pillar.id}
+              onClick={() => {
+                setActivePillar(pillar.id as DepartmentPillar)
+                setSelectedAgent('ALL')
+              }}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                activePillar === pillar.id
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              <pillar.icon size={14} className={activePillar === pillar.id ? 'text-cyan-400' : 'text-slate-400'} />
+              <span>{pillar.label}</span>
+              {pillar.count > 0 && (
+                <span
+                  className={`rounded-full px-1.5 py-0.2 font-mono text-[10px] ${
+                    activePillar === pillar.id ? 'bg-cyan-400 text-slate-950 font-extrabold' : 'bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  {pillar.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      ) : (
+        /* Focused Banner for Specialist Roles */
+        <div className="rounded-xl border border-blue-200 bg-blue-50/80 p-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs">
+              <Bot size={16} />
+            </span>
+            <div>
+              <div className="text-xs font-bold text-blue-950">
+                Không Gian AI Độc Quyền: {activePillar === 'PPC' ? 'PPC & Tăng Trưởng Doanh Thu' : activePillar === 'SUPPLY_CHAIN' ? 'Kho Vận & Quản Trị Chuỗi Cung Ứng' : activePillar === 'BRAND_CX' ? 'Thương Hiệu & Trải Nghiệm Khách Hàng' : 'Pháp Lý, FDA & Sức Khỏe Tài Khoản'}
+              </div>
+              <div className="text-[11px] text-blue-700">
+                Chỉ hiển thị các đề xuất thuộc quyền hạn phê duyệt của bạn. Các phân hệ khác được cách ly an toàn.
+              </div>
+            </div>
+          </div>
+          <span className="rounded-md bg-blue-100 px-2.5 py-1 font-mono text-[10px] font-bold text-blue-800 uppercase">
+            Role: {currentRole.replace('_', ' ')}
+          </span>
+        </div>
+      )}
 
       {/* Priority Summary Cards Banner */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:gap-4">
@@ -247,15 +379,42 @@ export function AIOperationsCenter() {
           <span className="text-xs font-semibold text-slate-600 flex items-center gap-1 mr-1">
             <Filter size={13} /> Lọc theo Agent:
           </span>
-          {[
-            { id: 'ALL', label: 'Tất cả' },
-            { id: 'INVENTORY', label: 'Tồn kho (FBA)' },
-            { id: 'PPC', label: 'Quảng cáo PPC' },
-            { id: 'LISTING', label: 'Listing Copy' },
-            { id: 'CUSTOMER', label: 'Customer Safety' },
-            { id: 'SALES', label: 'Sales Analyst' },
-            { id: 'COMPLIANCE', label: 'Compliance Gate' },
-          ].map((tab) => (
+          {(activePillar === 'ALL'
+            ? [
+                { id: 'ALL', label: 'Tất cả Agents' },
+                { id: 'INVENTORY', label: 'Tồn kho (FBA)' },
+                { id: 'PPC', label: 'Quảng cáo PPC' },
+                { id: 'LISTING', label: 'Listing Copy' },
+                { id: 'CUSTOMER', label: 'Customer Safety' },
+                { id: 'SALES', label: 'Sales Analyst' },
+                { id: 'COMPLIANCE', label: 'Compliance Gate' },
+              ]
+            : activePillar === 'PPC'
+            ? [
+                { id: 'ALL', label: 'Tất cả PPC' },
+                { id: 'PPC', label: 'Chiến Dịch PPC' },
+                { id: 'PROMOTION', label: 'Deals & Coupons' },
+                { id: 'SALES', label: 'Sales Velocity' },
+              ]
+            : activePillar === 'SUPPLY_CHAIN'
+            ? [
+                { id: 'ALL', label: 'Tất cả Kho Vận' },
+                { id: 'INVENTORY', label: 'Tồn Kho FBA & 3PL' },
+                { id: 'SALES', label: 'Tốc Độ Bán Hàng' },
+              ]
+            : activePillar === 'BRAND_CX'
+            ? [
+                { id: 'ALL', label: 'Tất cả Brand & CX' },
+                { id: 'LISTING', label: 'Listing Copy & SEO' },
+                { id: 'CUSTOMER', label: 'Chăm Sóc Khách Hàng' },
+              ]
+            : [
+                { id: 'ALL', label: 'Tất cả Pháp Lý' },
+                { id: 'COMPLIANCE', label: 'Cổng FDA / FSMA' },
+                { id: 'ACCOUNT_HEALTH', label: 'Sức Khỏe Gian Hàng' },
+                { id: 'CUSTOMER', label: 'Sự Cố An Toàn' },
+              ]
+          ).map((tab) => (
             <button
               key={tab.id}
               onClick={() => setSelectedAgent(tab.id as any)}
@@ -275,168 +434,140 @@ export function AIOperationsCenter() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value as any)}
-            className="rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-none"
+            className="rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 focus:outline-hidden"
           >
             <option value="PENDING_APPROVAL">Chờ phê duyệt ({pendingCount})</option>
             <option value="APPROVED">Đã phê duyệt</option>
-            <option value="EXECUTED">Đã thực thi SP-API</option>
+            <option value="EXECUTED">Đã thực thi</option>
             <option value="ALL">Tất cả trạng thái</option>
           </select>
         </div>
       </div>
 
-      {/* Recommendation Action Cards List */}
+      {/* Recommendations Feed List */}
       <div className="space-y-4">
         {displayedRecs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-white py-14 text-center">
-            <CheckCircle2 size={40} className="text-emerald-500 mb-3" />
-            <h3 className="text-base font-bold text-slate-900">Không có hành động chờ xử lý trong bộ lọc này</h3>
-            <p className="text-xs text-slate-500 max-w-sm mt-1">
-              Tất cả các khuyến nghị của AI đã được đội ngũ Vexim phê duyệt hoặc chưa phát hiện bất thường mới.
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 mx-auto mb-3">
+              <CheckCircle2 size={24} />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Phân hệ đang hoạt động ở trạng thái tối ưu!
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              Không có đề xuất tồn đọng nào cần xử lý trong phân hệ này. Hệ thống AI đang tự động giám sát 24/7.
             </p>
           </div>
         ) : (
           displayedRecs.map((rec) => {
             const agent = getAgentBadge(rec.agentType)
-            const priorityStyle = getPriorityStyle(rec.priority)
-            const AgentIcon = agent.icon
+            const priority = getPriorityStyle(rec.priority)
+            const assignee = getAssigneeInfo(rec)
+            const Icon = agent.icon
 
             return (
               <div
                 key={rec.id}
-                className={`group relative overflow-hidden rounded-xl border bg-white shadow-xs transition-all hover:shadow-md ${priorityStyle.border}`}
+                className={`group rounded-2xl border bg-white p-5 shadow-xs transition-all hover:shadow-md ${priority.border}`}
               >
-                {/* Top Priority Indicator Line */}
-                <div className={`h-1.5 w-full ${priorityStyle.indicator}`} />
-
-                <div className="p-5">
-                  {/* Row 1: Header metadata */}
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  {/* Left Column: Details */}
+                  <div className="space-y-2.5 flex-1">
+                    {/* Tags row */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded px-2 py-0.5 text-[10px] font-bold ${priorityStyle.pill}`}>
-                        {priorityStyle.badge}
+                      <span className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-bold ${agent.color}`}>
+                        <Icon size={12} />
+                        <span>{agent.label}</span>
                       </span>
 
-                      <span className={`flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold ${agent.color}`}>
-                        <AgentIcon size={13} />
-                        {agent.label}
+                      <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${priority.pill}`}>
+                        {priority.badge}
                       </span>
 
-                      <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-mono text-slate-600">
-                        {rec.entityIdentifier}
-                      </span>
-
-                      <span className="text-[10px] text-slate-400">
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
                         {rec.clientName}
                       </span>
-                    </div>
 
-                    <div className="flex items-center gap-3 text-xs text-slate-500">
-                      <span className="flex items-center gap-1 font-mono text-[11px]">
-                        <Bot size={13} className="text-blue-600" />
-                        Độ tin cậy AI: <strong className="text-blue-700">{rec.confidenceScore}%</strong>
+                      {rec.sku && (
+                        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[10px] text-slate-500">
+                          SKU: {rec.sku}
+                        </span>
+                      )}
+
+                      {/* Assignee Badge */}
+                      <span className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold ${assignee.badgeColor}`}>
+                        <User size={11} />
+                        <span>Phụ trách: {assignee.name}</span>
                       </span>
                     </div>
-                  </div>
 
-                  {/* Row 2: Title & Description */}
-                  <div className="mt-3">
+                    {/* Title */}
                     <h3 className="text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                      {rec.title}
+                      <FormattedText text={rec.title} />
                     </h3>
-                    <p className="mt-1 text-xs text-slate-600 leading-relaxed">
+
+                    {/* Description */}
+                    <p className="text-xs leading-relaxed text-slate-600">
                       <FormattedText text={rec.description} />
                     </p>
-                  </div>
 
-                  {/* Row 3: Reason & Expected Impact Grid */}
-                  <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 rounded-xl bg-slate-50/80 p-3.5 border border-slate-100">
-                    <div>
-                      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                        <AlertCircle size={12} className="text-amber-500" />
-                        Nguyên nhân & Phân tích gốc rễ (Root Cause)
+                    {/* Proposed Action Box */}
+                    <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-slate-800">
+                        <Sparkles size={13} className="text-blue-600" />
+                        <span>Hành động AI đề xuất:</span>
                       </div>
-                      <p className="text-xs text-slate-700 mt-1 leading-normal font-medium">
-                        {rec.reason}
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1">
-                        <Sparkles size={12} className="text-blue-500" />
-                        Tác động kỳ vọng (Expected Impact)
+                      <div className="text-slate-700 leading-relaxed pl-4">
+                        <FormattedText text={rec.proposedAction} />
                       </div>
-                      <p className="text-xs text-emerald-800 font-semibold mt-1 leading-normal">
-                        {rec.expectedImpact}
-                      </p>
+                    </div>
+
+                    {/* Impact Reasoning */}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 pt-1">
+                      <span><strong>Tác động:</strong> {rec.estimatedImpact}</span>
+                      <span>&bull;</span>
+                      <span><strong>Mức độ tự tin AI:</strong> {rec.confidenceScore}%</span>
+                      <span>&bull;</span>
+                      <span className="font-mono text-[10px] text-slate-400">Tạo lúc: {rec.createdAt}</span>
                     </div>
                   </div>
 
-                  {/* Row 4: Proposed Action Banner */}
-                  <div className="mt-3 flex items-start gap-2 rounded-lg bg-blue-50/60 p-2.5 border border-blue-100">
-                    <Zap size={15} className="text-blue-600 mt-0.5 shrink-0" />
-                    <div className="text-xs">
-                      <strong className="text-blue-900">Hành động AI đề xuất: </strong>
-                      <span className="text-blue-800"><FormattedText text={rec.proposedAction} /></span>
-                    </div>
-                  </div>
-
-                  {/* Row 5: Action Buttons (Human-in-the-Loop) */}
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openModal('APPROVAL_DETAIL', rec)}
-                        className="flex items-center gap-1 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        <Eye size={13} />
-                        <span>Xem chi tiết & Dữ liệu gốc (Diff)</span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {rec.status === 'PENDING_APPROVAL' && (
-                        <>
-                          <button
-                            onClick={() => rejectRecommendation(rec.id)}
-                            className="flex items-center gap-1 rounded-lg border border-red-200 bg-red-50/50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors"
-                          >
-                            <X size={13} />
-                            <span>Bác bỏ (Reject)</span>
-                          </button>
-
-                          <button
-                            onClick={() => approveRecommendation(rec.id)}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition-colors"
-                          >
-                            <Check size={14} />
-                            <span>Phê duyệt (Approve)</span>
-                          </button>
-                        </>
-                      )}
-
-                      {rec.status === 'APPROVED' && (
+                  {/* Right Column: Human Action CTA Buttons */}
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between lg:justify-start gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100 shrink-0">
+                    {rec.status === 'PENDING_APPROVAL' && (
+                      <>
                         <button
-                          onClick={() => executeRecommendation(rec.id)}
-                          className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-colors"
+                          onClick={() => approveRecommendation(rec.id)}
+                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-[0.98]"
                         >
-                          <Play size={13} />
-                          <span>Thực thi lên Amazon US (SP-API)</span>
+                          <Check size={14} />
+                          <span>Duyệt Lệnh</span>
                         </button>
-                      )}
+                        <button
+                          onClick={() => rejectRecommendation(rec.id)}
+                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        >
+                          Bác bỏ
+                        </button>
+                      </>
+                    )}
 
-                      {rec.status === 'EXECUTED' && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600">
-                          <CheckCircle2 size={15} />
-                          <span>Đã thực thi trên Amazon US</span>
-                        </span>
-                      )}
+                    {rec.status === 'APPROVED' && (
+                      <button
+                        onClick={() => executeRecommendation(rec.id)}
+                        className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all"
+                      >
+                        <Play size={14} />
+                        <span>Bắn Lệnh SP-API</span>
+                      </button>
+                    )}
 
-                      {rec.status === 'REJECTED' && (
-                        <span className="text-xs font-medium text-slate-400 italic">
-                          Đã bị từ chối bởi {rec.rejectedBy}
-                        </span>
-                      )}
-                    </div>
+                    {rec.status === 'EXECUTED' && (
+                      <span className="flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                        <CheckCircle2 size={14} />
+                        <span>Đã thực thi thành công</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
