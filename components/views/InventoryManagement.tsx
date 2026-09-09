@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 export function InventoryManagement() {
-  const { filteredInventory, openModal, createTask, setActiveTab, currentRole } = useAppState()
+  const { filteredInventory, openModal, createTask, setActiveTab, currentRole, showToast } = useAppState()
   const [filterRisk, setFilterRisk] = useState<InventoryRisk | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -75,16 +75,25 @@ export function InventoryManagement() {
   }
 
   const handleCreateReorderTask = (item: InventoryItem) => {
-    createTask({
-      clientId: item.clientId,
-      title: `Tạo Purchase Order ${item.recommendedReorderQty} units SKU ${item.sku}`,
-      description: `Tồn kho khả dụng: ${item.fbaAvailable} units (Days of Supply: ${item.daysOfSupply.toFixed(1)} ngày). Cần book xưởng sản xuất và chuẩn bị hồ sơ xuất khẩu.`,
-      priority: item.riskLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
-      status: 'OPEN',
-      assignedRole: 'OPS_MANAGER',
-      source: 'AI_INVENTORY_AGENT',
-      linkedEntity: { type: 'INVENTORY', id: item.id, name: item.sku },
-    })
+    if (currentRole === 'CLIENT_SUPPLIER') {
+      if (showToast) {
+        showToast(
+          `Đã gửi thông báo xác nhận xưởng sẵn sàng đóng gói ${item.recommendedReorderQty} units SKU ${item.sku} tới Trưởng kho Ánh Nguyễn!`,
+          'success'
+        )
+      }
+    } else {
+      createTask({
+        clientId: item.clientId,
+        title: `Tạo Purchase Order ${item.recommendedReorderQty} units SKU ${item.sku}`,
+        description: `Tồn kho khả dụng: ${item.fbaAvailable} units (Days of Supply: ${item.daysOfSupply.toFixed(1)} ngày). Cần book xưởng sản xuất và chuẩn bị hồ sơ xuất khẩu.`,
+        priority: item.riskLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+        status: 'OPEN',
+        assignedRole: 'OPS_MANAGER',
+        source: 'AI_INVENTORY_AGENT',
+        linkedEntity: { type: 'INVENTORY', id: item.id, name: item.sku },
+      })
+    }
   }
 
   return (
@@ -293,13 +302,14 @@ export function InventoryManagement() {
                       {item.recommendedReorderQty > 0 ? (
                         <button
                           onClick={() => handleCreateReorderTask(item)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors ${
+                          className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-all cursor-pointer ${
                             currentRole === 'CLIENT_SUPPLIER'
-                              ? 'bg-emerald-600 hover:bg-emerald-700'
-                              : 'bg-blue-600 hover:bg-blue-700'
+                              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98]'
+                              : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
                           }`}
+                          title={currentRole === 'CLIENT_SUPPLIER' ? 'Báo cho đội ngũ Vexim biết xưởng đã sẵn sàng đóng gói lô hàng này' : 'Tạo Task giao việc cho Logistics Lead'}
                         >
-                          {currentRole === 'CLIENT_SUPPLIER' ? 'Lên Lịch Sản Xuất' : 'Tạo Task PO'}
+                          {currentRole === 'CLIENT_SUPPLIER' ? '📦 Báo Xưởng Đã Sẵn Sàng' : 'Tạo Task PO'}
                         </button>
                       ) : (
                         <span className="text-slate-400 text-xs">Ổn định</span>
