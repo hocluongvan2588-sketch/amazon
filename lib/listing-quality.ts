@@ -1,3 +1,5 @@
+import { ListingScore } from './types'
+
 // ====================================================================
 // VEXIM LISTING QUALITY SCORE ENGINE (Sprint 3.2) — THUẦN DETERMINISTIC
 // Chấm điểm 100 theo 5 trục: Title (30) / Bullets (25) / Description (15)
@@ -393,5 +395,22 @@ export function scoreListing(input: ListingInput): ListingQualityResult {
     backendByteAnalysis: backend,
     strengths,
     issues: issues.sort((a, b) => (a.severity === 'HIGH' ? -1 : b.severity === 'HIGH' ? 1 : 0)),
+  }
+}
+
+/** Map kết quả engine -> scorecard chuẩn của ListingData (dùng khi áp draft/chấm lại). */
+export function toListingScorecard(res: ListingQualityResult): ListingScore {
+  const pct = (a: { score: number; max: number }) =>
+    a.max > 0 ? Math.round((a.score / a.max) * 100) : 0
+  return {
+    overall: res.overall,
+    titleScore: pct(res.axes.title),
+    bulletScore: pct(res.axes.bullets),
+    keywordScore: pct(res.axes.backend),
+    contentScore: pct(res.axes.description),
+    conversionPotential: res.grade,
+    complianceRisk: res.complianceRisk,
+    strengths: res.strengths,
+    weaknesses: res.issues.map((i) => `${i.severity}: ${i.message}`),
   }
 }

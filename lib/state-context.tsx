@@ -80,6 +80,7 @@ import { DEFAULT_RATE_CARDS } from './logistics-engine'
 import { AIOperationsOrchestrator } from './ai-engine'
 import { DEMO_PASSWORD } from './auth-constants'
 import { computeReadiness } from './readiness-engine'
+import { scoreListing, toListingScorecard } from './listing-quality'
 import type { SyncResult } from './amazon-sp-api'
 
 export type ActiveNavTab =
@@ -193,6 +194,7 @@ interface AppStateContextType {
   sendCustomerReply: (messageId: string, replyText: string) => Promise<void>
   addProduct: (product: Partial<Product>) => void
   addProductDocument: (productId: string, doc: ProductDocument) => void
+  rescoreListing: (listingId: string) => void
   createCampaign: (campaign: Partial<PpcCampaign>) => void
   toggleCampaignStatus: (campaignId: string) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
@@ -1000,21 +1002,64 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   const applyListingDraft = async (listingId: string) => {
     const list = listings.find((l) => l.id === listingId)
     if (!list || !list.aiOptimizationDraft) return
+    const d = list.aiOptimizationDraft
+
+    // Sprint audit: áp ĐỦ draft (trước đây chỉ áp title+bullets, mất backend terms & description)
+    // và chấm lại điểm bằng engine 3.2 từ nội dung MỚI (trước đây hardcode 96/'A+' cho mọi listing)
+    const res = scoreListing({
+      listingId: list.id,
+      sku: list.sku,
+      asin: list.asin,
+      title: d.title,
+      bulletPoints: d.bulletPoints,
+      description: d.description,
+      backendSearchTerms: d.backendSearchTerms,
+      hasAplus: Boolean(list.aplusContentHtml),
+    })
+    const newScore = toListingScorecard(res)
 
     setListings((prev) =>
       prev.map((l) =>
         l.id === listingId && l.aiOptimizationDraft
           ? {
               ...l,
-              title: l.aiOptimizationDraft.title,
-              bulletPoints: l.aiOptimizationDraft.bulletPoints,
-              currentScore: { ...l.currentScore, overall: 96, conversionPotential: 'A+' },
-              lastOptimizedAt: 'Vừa cập nhật',
+              title: d.title,
+              bulletPoints: d.bulletPoints,
+              description: d.description,
+              backendSearchTerms: d.backendSearchTerms,
+              currentScore: newScore,
+              lastOptimizedAt: new Date().toISOString().slice(0, 10),
             }
           : l
       )
     )
-    showToast('Đã áp dụng bản tối ưu hóa Listing AI V2!', 'success')
+    showToast(
+      `Đã áp draft & chấm lại: ${newScore.overall}/100 (Grade ${newScore.conversionPotential}) — điểm TÍNH từ nội dung mới, không phải số cam kết.`,
+      'success'
+    )
+  }
+
+  // Sprint audit: nút "chấm lại" chạy engine thật (trước đây là setTimeout 1s giả "AI đang phân tích")
+  const rescoreListing = (listingId: string) => {
+    let overall = 0
+    setListings((prev) =>
+      prev.map((l) => {
+        if (l.id !== listingId) return l
+        const res = scoreListing({
+          listingId: l.id,
+          sku: l.sku,
+          asin: l.asin,
+          title: l.title,
+          bulletPoints: l.bulletPoints,
+          description: l.description,
+          backendSearchTerms: l.backendSearchTerms,
+          hasAplus: Boolean(l.aplusContentHtml),
+        })
+        overall = res.overall
+        return { ...l, currentScore: toListingScorecard(res), lastOptimizedAt: new Date().toISOString().slice(0, 10) }
+      })
+    )
+    showToast(`Engine đã chấm lại listing từ nội dung hiện có: ${overall}/100.`, 'info')
   }
 
   const createCampaign = (campData: Partial<PpcCampaign>) => {
@@ -1615,6 +1660,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         sendCustomerReply,
         addProduct,
         addProductDocument,
+        rescoreListing,
         createCampaign,
         toggleCampaignStatus,
         connectAmazonAccount,

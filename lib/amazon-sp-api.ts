@@ -79,17 +79,6 @@ export class AmazonSPAPIConnector {
   }
 
   // 4. Listings Items API Sync & Patch Draft
-  async pushListingUpdate(asin: string, payload: Record<string, any>): Promise<SyncResult> {
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    return {
-      module: 'LISTINGS_ITEMS_2021-08-01',
-      success: true,
-      itemsCount: 1,
-      syncedAt: new Date().toISOString(),
-      details: `Đã gửi bản vá PATCH cho ASIN ${asin} tới Amazon Catalog System. Trạng thái submission: ACCEPTED (Feed ID: 890128391823).`,
-    }
-  }
-
   // 5. Amazon Advertising API Sync
   async syncAdvertising(campaignIds?: string[]): Promise<SyncResult> {
     await new Promise((resolve) => setTimeout(resolve, 700))
