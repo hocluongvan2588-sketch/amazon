@@ -171,6 +171,8 @@ interface AppStateContextType {
   applyListingDraft: (listingId: string) => Promise<void>
   sendCustomerReply: (messageId: string, replyText: string) => Promise<void>
   addProduct: (product: Partial<Product>) => void
+  createCampaign: (campaign: Partial<PpcCampaign>) => void
+  toggleCampaignStatus: (campaignId: string) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
 
   // Deep-Tech v2.0 Actions
@@ -754,6 +756,43 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     showToast('Đã áp dụng bản tối ưu hóa Listing AI V2!', 'success')
   }
 
+  const createCampaign = (campData: Partial<PpcCampaign>) => {
+    const newCamp: PpcCampaign = {
+      id: `camp-${Date.now()}`,
+      clientId: campData.clientId || selectedClientId || 'client-vina-01',
+      campaignName: campData.campaignName || 'New PPC Campaign',
+      type: campData.type || 'SPONSORED_PRODUCTS',
+      targetingType: campData.targetingType || 'MANUAL',
+      status: 'ENABLED',
+      dailyBudget: campData.dailyBudget || 25,
+      spend7d: 0,
+      sales7d: 0,
+      orders7d: 0,
+      impressions7d: 0,
+      clicks7d: 0,
+      ctr: 0,
+      cpc: 0,
+      acos: 0,
+      targetAcos: campData.targetAcos || 20,
+      tacos: 0,
+      roas: 0,
+    }
+
+    setPpcCampaigns((prev) => [newCamp, ...prev])
+    showToast(`Đã tạo chiến dịch quảng cáo "${newCamp.campaignName}" thành công!`, 'success')
+  }
+
+  const toggleCampaignStatus = (campaignId: string) => {
+    setPpcCampaigns((prev) =>
+      prev.map((c) =>
+        c.id === campaignId
+          ? { ...c, status: c.status === 'ENABLED' ? 'PAUSED' : 'ENABLED' }
+          : c
+      )
+    )
+    showToast('Đã cập nhật trạng thái chiến dịch PPC!', 'info')
+  }
+
   // 10. SEND CUSTOMER REPLY
   const sendCustomerReply = async (messageId: string, replyText: string) => {
     setCustomerMessages((prev) =>
@@ -980,6 +1019,8 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         applyListingDraft,
         sendCustomerReply,
         addProduct,
+        createCampaign,
+        toggleCampaignStatus,
         connectAmazonAccount,
         promoteSearchTerm,
         negateSearchTerm,

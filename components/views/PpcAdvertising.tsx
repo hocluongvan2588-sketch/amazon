@@ -1,5 +1,7 @@
 'use client'
 
+import { CampaignCreateModal } from "@/components/modals/CampaignCreateModal"
+
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { PpcCampaign, PpcKeyword } from '@/lib/types'
@@ -27,6 +29,8 @@ import {
 export function PpcAdvertising() {
   const { filteredCampaigns, filteredKeywords, setActiveTab, openModal } = useAppState()
   const [activeTab, setActiveTabLocal] = useState<'CAMPAIGNS' | 'KEYWORDS' | 'SEARCH_TERMS'>('CAMPAIGNS')
+  const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false)
+  const { toggleCampaignStatus } = useAppState()
 
   return (
     <div className="space-y-6">
@@ -47,13 +51,20 @@ export function PpcAdvertising() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setIsCampaignModalOpen(true)}
+            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-purple-700 to-indigo-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:from-purple-800 hover:to-indigo-800 transition-all"
+          >
+            <Plus size={15} />
+            <span>Tạo Chiến Dịch PPC Mới</span>
+          </button>
           <button
             onClick={() => setActiveTab('ai-operations')}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-all"
           >
-            <Sparkles size={14} />
-            <span>Xem Đề xuất Điều chỉnh Bid tại AI Center</span>
+            <Sparkles size={14} className="text-blue-600" />
+            <span>Đề xuất AI PPC</span>
           </button>
         </div>
       </div>
@@ -178,9 +189,17 @@ export function PpcAdvertising() {
                     <td className="py-3 px-3 font-bold text-indigo-700">{camp.roas.toFixed(2)}x</td>
 
                     <td className="py-3 px-4 text-right">
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
-                        {camp.status}
-                      </span>
+                      <button
+                        onClick={() => toggleCampaignStatus(camp.id)}
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold transition-transform active:scale-95 ${
+                          camp.status === 'ENABLED'
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        }`}
+                        title="Bấm để bật/tắt trạng thái chiến dịch"
+                      >
+                        {camp.status === 'ENABLED' ? '● Đang Chạy' : '⏸ Đã Tạm Dừng'}
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -263,6 +282,11 @@ export function PpcAdvertising() {
           </div>
         </div>
       )}
+      {/* Campaign Create Modal */}
+      <CampaignCreateModal
+        isOpen={isCampaignModalOpen}
+        onClose={() => setIsCampaignModalOpen(false)}
+      />
     </div>
   )
 }
