@@ -3,6 +3,7 @@
 import { FormattedText } from "@/components/FormattedText"
 
 import React, { useState } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import { useAppState } from '@/lib/state-context'
 import { UserRole, TeamMember } from '@/lib/types'
 import {
@@ -60,6 +61,7 @@ export function MasterAdminControlCenter() {
 
   const [activeSubTab, setActiveSubTab] = useState<'rbac' | 'financial-overview' | 'approvals-audit'>('rbac')
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
+  const addMemberModalRef = useOutsideClick<HTMLDivElement>(() => setShowAddMemberModal(false), showAddMemberModal)
   const [newMemberForm, setNewMemberForm] = useState<Partial<TeamMember>>({
     fullName: '',
     email: '',
@@ -508,7 +510,7 @@ export function MasterAdminControlCenter() {
       {/* MODAL: ADD TEAM MEMBER */}
       {showAddMemberModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-100">
+          <div ref={addMemberModalRef} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-100">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900">Cấp Tài Khoản & Phân Quyền Nhân Sự</h3>
               <button onClick={() => setShowAddMemberModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>

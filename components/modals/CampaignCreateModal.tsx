@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import {
   Megaphone,
   X,
@@ -30,6 +31,7 @@ export function CampaignCreateModal({ isOpen, onClose }: { isOpen: boolean; onCl
   const [targetAcos, setTargetAcos] = useState<number>(20)
   const [defaultBid, setDefaultBid] = useState<number>(0.85)
   const [strategy, setStrategy] = useState<'DYNAMIC_DOWN_ONLY' | 'DYNAMIC_UP_AND_DOWN' | 'FIXED_BIDS'>('DYNAMIC_DOWN_ONLY')
+  const modalRef = useOutsideClick<HTMLDivElement>(onClose)
 
   if (!isOpen) return null
 
@@ -51,7 +53,7 @@ export function CampaignCreateModal({ isOpen, onClose }: { isOpen: boolean; onCl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
+      <div ref={modalRef} className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 px-6 py-4 text-white">
           <div className="flex items-center gap-3">

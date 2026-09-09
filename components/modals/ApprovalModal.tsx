@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import { useAppState } from '@/lib/state-context'
 import { AIRecommendation } from '@/lib/types'
 import {
@@ -28,6 +29,7 @@ export function ApprovalModal() {
   const [showRejectInput, setShowRejectInput] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [modifiedDataJson, setModifiedDataJson] = useState(JSON.stringify(rec?.actionData || {}, null, 2))
+  const modalRef = useOutsideClick<HTMLDivElement>(closeModal)
 
   if (activeModal?.type !== 'APPROVAL_DETAIL' || !rec) return null
 
@@ -58,7 +60,7 @@ export function ApprovalModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-2xl rounded-2xl border border-border bg-white p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 my-8">
+      <div ref={modalRef} className="relative w-full max-w-2xl rounded-2xl border border-border bg-white p-6 shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-150 my-8">
         {/* Header */}
         <div className="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>

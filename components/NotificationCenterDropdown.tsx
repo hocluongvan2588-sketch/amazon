@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import {
   Bell,
   Check,
@@ -37,6 +38,7 @@ interface NotificationItem {
 export function NotificationCenterDropdown() {
   const { setActiveTab, recommendations, inventory, customerMessages } = useAppState()
   const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useOutsideClick<HTMLDivElement>(() => setIsOpen(false))
 
   // Initial rich dynamic notifications
   const [notifications, setNotifications] = useState<NotificationItem[]>([
@@ -123,7 +125,7 @@ export function NotificationCenterDropdown() {
   }
 
   return (
-    <div className="relative">
+    <div ref={dropdownRef} className="relative">
       {/* Notification Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

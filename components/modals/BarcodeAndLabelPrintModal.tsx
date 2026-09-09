@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import {
   Printer,
   Download,
@@ -43,6 +44,7 @@ export function BarcodeAndLabelPrintModal({
   const [destinationFc, setDestinationFc] = useState<string>('ONT8 - Moreno Valley, CA 92551')
 
   const printableRef = useRef<HTMLDivElement>(null)
+  const modalRef = useOutsideClick<HTMLDivElement>(onClose, isOpen)
 
   if (!isOpen) return null
 
@@ -92,7 +94,7 @@ export function BarcodeAndLabelPrintModal({
         }
       `}</style>
 
-      <div className="relative w-full max-w-4xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+      <div ref={modalRef} className="relative w-full max-w-4xl rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 px-6 py-4 text-white">
           <div className="flex items-center gap-3">

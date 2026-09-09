@@ -1,5 +1,6 @@
 'use client'
 
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import { NotificationCenterDropdown } from "@/components/NotificationCenterDropdown"
 
 import React, { useState } from 'react'
@@ -61,6 +62,10 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
   const [clientDropdownOpen, setClientDropdownOpen] = useState(false)
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
 
+  const roleDropdownRef = useOutsideClick<HTMLDivElement>(() => setRoleDropdownOpen(false))
+  const clientDropdownRef = useOutsideClick<HTMLDivElement>(() => setClientDropdownOpen(false))
+  const profileDropdownRef = useOutsideClick<HTMLDivElement>(() => setProfileDropdownOpen(false))
+
   const pendingApprovalsCount = recommendations.filter((r) => r.status === 'PENDING_APPROVAL').length
 
   const roleConfigs: Record<UserRole, { label: string; department: string; tag: string; badgeColor: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = {
@@ -83,7 +88,7 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
       {/* Left: Prominent Role Selector */}
       <div className="flex items-center gap-3">
         {/* Role Switcher (Department Selector) */}
-        <div className="relative">
+        <div ref={roleDropdownRef} className="relative">
           <button
             onClick={() => {
               setRoleDropdownOpen(!roleDropdownOpen)
@@ -140,7 +145,7 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
 
         {/* Supplier Selector */}
         {currentRole !== 'CLIENT_SUPPLIER' && (
-          <div className="relative hidden md:block">
+          <div ref={clientDropdownRef} className="relative hidden md:block">
             <button
               onClick={() => {
                 setClientDropdownOpen(!clientDropdownOpen)
@@ -252,7 +257,7 @@ export function TopHeader({ onOpenChat }: { onOpenChat: () => void }) {
         </button>
 
         {/* User Account Avatar & Interactive Profile Dropdown */}
-        <div className="relative">
+        <div ref={profileDropdownRef} className="relative">
           <button
             onClick={() => {
               setProfileDropdownOpen(!profileDropdownOpen)

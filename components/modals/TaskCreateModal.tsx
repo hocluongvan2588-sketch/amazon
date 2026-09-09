@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useOutsideClick } from "@/lib/useOutsideClick"
 import { useAppState } from '@/lib/state-context'
 import { OperationalTask } from '@/lib/types'
 import { Check, Plus, X } from 'lucide-react'
@@ -13,6 +14,7 @@ export function TaskCreateModal() {
   const [priority, setPriority] = useState<OperationalTask['priority']>('HIGH')
   const [assignedTo, setAssignedTo] = useState('Alex Nguyen (Operations Manager)')
   const [dueDate, setDueDate] = useState('2026-09-12')
+  const modalRef = useOutsideClick<HTMLDivElement>(closeModal)
 
   if (activeModal?.type !== 'CREATE_TASK') return null
 
@@ -32,7 +34,7 @@ export function TaskCreateModal() {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-lg rounded-2xl border border-border bg-white p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 my-8">
+      <div ref={modalRef} className="relative w-full max-w-lg rounded-2xl border border-border bg-white p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150 my-8">
         <div className="flex items-start justify-between pb-3 border-b border-slate-100">
           <div>
             <h3 className="text-base font-bold text-slate-900">Tạo Nhiệm vụ Vận hành Mới</h3>
