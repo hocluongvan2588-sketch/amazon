@@ -11,6 +11,117 @@ interface ChatMessage {
   timestamp: string
 }
 
+function renderInlineFormatting(text: string, isUser: boolean) {
+  // Split text by bold markers **...**, code `...`, italic *...*
+  const parts = text.split(/(\*\*.*?\*\*|`.*?`|\*.*?\*)/g)
+  return parts.map((part, index) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      const inner = part.slice(2, -2)
+      return (
+        <strong
+          key={index}
+          className={isUser ? 'font-extrabold text-white underline decoration-white/30' : 'font-extrabold text-slate-950'}
+        >
+          {inner}
+        </strong>
+      )
+    }
+    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+      const inner = part.slice(1, -1)
+      return (
+        <code
+          key={index}
+          className={
+            isUser
+              ? 'bg-white/20 px-1 py-0.5 rounded font-mono text-[11px]'
+              : 'bg-slate-200/80 px-1 py-0.5 rounded font-mono text-[11px] text-purple-900 font-semibold'
+          }
+        >
+          {inner}
+        </code>
+      )
+    }
+    if (part.startsWith('*') && part.endsWith('*') && part.length >= 2 && !part.startsWith('**')) {
+      const inner = part.slice(1, -1)
+      return (
+        <em key={index} className="italic">
+          {inner}
+        </em>
+      )
+    }
+    return <span key={index}>{part}</span>
+  })
+}
+
+function FormattedMarkdownMessage({ content, isUser }: { content: string; isUser: boolean }) {
+  const lines = content.split('\n')
+  return (
+    <div className="space-y-1.5 leading-relaxed text-xs">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim()
+        if (!trimmed) {
+          return <div key={idx} className="h-1" />
+        }
+
+        // Heading 3
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h5 key={idx} className={`font-bold text-xs pt-1 ${isUser ? 'text-white' : 'text-slate-900'}`}>
+              {renderInlineFormatting(trimmed.replace('### ', ''), isUser)}
+            </h5>
+          )
+        }
+        // Heading 1 & 2
+        if (trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
+          return (
+            <h4 key={idx} className={`font-bold text-sm pt-1 ${isUser ? 'text-white' : 'text-slate-950'}`}>
+              {renderInlineFormatting(trimmed.replace(/^#+\s*/, ''), isUser)}
+            </h4>
+          )
+        }
+
+        // Numbered list item: 1. , 2. , etc.
+        const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/)
+        if (numMatch) {
+          return (
+            <div key={idx} className="flex items-start gap-1.5 pl-0.5 pt-0.5">
+              <span className={`font-bold font-mono text-[11px] shrink-0 ${isUser ? 'text-blue-200' : 'text-blue-700'}`}>
+                {numMatch[1]}.
+              </span>
+              <div className="flex-1">
+                {renderInlineFormatting(numMatch[2], isUser)}
+              </div>
+            </div>
+          )
+        }
+
+        // Bullet point: - or • or *
+        if (trimmed.startsWith('- ') || trimmed.startsWith('• ') || (trimmed.startsWith('* ') && !trimmed.startsWith('**'))) {
+          const bulletText = trimmed.replace(/^[-•*]\s*/, '')
+          const isSubBullet = line.startsWith('   ') || line.startsWith('\t')
+          return (
+            <div key={idx} className={`flex items-start gap-1.5 ${isSubBullet ? 'pl-4 text-[11.5px]' : 'pl-1'}`}>
+              <span className={`text-[10px] shrink-0 mt-0.5 ${isUser ? 'text-blue-200' : 'text-slate-400'}`}>
+                {isSubBullet ? '◦' : '•'}
+              </span>
+              <div className="flex-1">
+                {renderInlineFormatting(bulletText, isUser)}
+              </div>
+            </div>
+          )
+        }
+
+        // Standard text line
+        return (
+          <div key={idx}>
+            {renderInlineFormatting(line, isUser)}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function AIChatDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { filteredProducts, filteredInventory, filteredRecommendations, agencyKpis } = useAppState()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -198,13 +309,13 @@ export function AIChatDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                   <span>• {message.timestamp}</span>
                 </div>
                 <div
-                  className={`rounded-2xl p-3.5 text-xs leading-relaxed max-w-[88%] ${
+                  className={`rounded-2xl p-3.5 text-xs leading-relaxed max-w-[88%] shadow-xs ${
                     message.role === 'user'
                       ? 'bg-blue-600 text-white font-medium rounded-tr-xs'
-                      : 'bg-slate-100 text-slate-800 rounded-tl-xs whitespace-pre-wrap'
+                      : 'bg-slate-100 text-slate-800 rounded-tl-xs border border-slate-200/60'
                   }`}
                 >
-                  {message.content}
+                  <FormattedMarkdownMessage content={message.content} isUser={message.role === 'user'} />
                 </div>
               </div>
             ))

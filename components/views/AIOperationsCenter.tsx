@@ -1,5 +1,7 @@
 'use client'
 
+import { FormattedText } from "@/components/FormattedText"
+
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { AIAgentType, AIRecommendation, AIRecommendationPriority } from '@/lib/types'
@@ -343,7 +345,7 @@ export function AIOperationsCenter() {
                       {rec.title}
                     </h3>
                     <p className="mt-1 text-xs text-slate-600 leading-relaxed">
-                      {rec.description}
+                      <FormattedText text={rec.description} />
                     </p>
                   </div>
 
@@ -375,7 +377,7 @@ export function AIOperationsCenter() {
                     <Zap size={15} className="text-blue-600 mt-0.5 shrink-0" />
                     <div className="text-xs">
                       <strong className="text-blue-900">Hành động AI đề xuất: </strong>
-                      <span className="text-blue-800">{rec.proposedAction}</span>
+                      <span className="text-blue-800"><FormattedText text={rec.proposedAction} /></span>
                     </div>
                   </div>
 

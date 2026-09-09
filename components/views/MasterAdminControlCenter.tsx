@@ -1,5 +1,7 @@
 'use client'
 
+import { FormattedText } from "@/components/FormattedText"
+
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { UserRole, TeamMember } from '@/lib/types'
@@ -428,11 +430,11 @@ export function MasterAdminControlCenter() {
                         </span>
                         <span className="font-bold text-sm text-slate-900">{rec.title}</span>
                       </div>
-                      <p className="text-xs text-slate-600">{rec.description}</p>
+                      <p className="text-xs text-slate-600"><FormattedText text={rec.description} /></p>
                       <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500 pt-1">
                         <span>Gian hàng: <strong className="text-slate-800">{rec.clientName}</strong></span>
                         <span>&bull;</span>
-                        <span>Hành động: <strong className="text-slate-800">{rec.proposedAction}</strong></span>
+                        <span>Hành động: <strong className="text-slate-800"><FormattedText text={rec.proposedAction} /></strong></span>
                         <span>&bull;</span>
                         <span className="rounded bg-slate-200 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-800">
                           Người phụ trách: {rec.impactCategory === 'FINANCIAL' || rec.title.includes('bid') ? 'Lương Hoàng Minh (PPC Lead)' : rec.impactCategory === 'OPERATIONAL' || rec.title.includes('Listing') ? 'Trần Thu Hà (Brand Lead)' : rec.impactCategory === 'LEGAL' || rec.title.includes('Dị Ứng') ? 'Lê Hoàng Nam (Legal Lead)' : 'Nguyễn Tuấn Anh (Ops Manager)'}
