@@ -303,6 +303,7 @@ export class SupabaseDatabaseService {
           fbaReserved: row.fba_reserved || 0,
           fbaInbound: row.fba_inbound || 0,
           dailyVelocity7d: Number(row.daily_velocity_7d || 0),
+          dailyVelocity14d: row.daily_velocity_14d != null ? Number(row.daily_velocity_14d) : undefined,
           dailyVelocity30d: Number(row.daily_velocity_30d || 0),
           daysOfSupply: Number(row.days_of_supply || 0),
           supplierLeadTimeDays: leadTimeDays,

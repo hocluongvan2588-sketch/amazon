@@ -6,6 +6,7 @@ import { ThreePlDispatchModal } from "@/components/modals/ThreePlDispatchModal"
 import { useAppState } from '@/lib/state-context'
 import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
 import { DEFAULT_RATE_CARDS, calculateFullLandedCost, calculateCbm, calculateVolumetricWeight } from '@/lib/logistics-engine'
+import { ForecastCapacityPanel } from './ForecastCapacityPanel'
 import { InboundShipmentItem, FreightRateCard } from '@/lib/types'
 import {
   AlertCircle,
@@ -696,6 +697,9 @@ export function SupplyChainHub() {
       {/* TAB: CAPACITY LIMITS & BIDDING */}
       {activeTab === 'capacity-limits' && (
         <div className="space-y-4">
+          {/* Sprint 3.3 — Forecast 50/30/20 + Capacity Bid Suggestion */}
+          <ForecastCapacityPanel />
+
           <div className="bg-white p-5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-xs">
             <div>
               <div className="flex items-center gap-2 mb-1">

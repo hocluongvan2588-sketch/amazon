@@ -185,6 +185,8 @@ export interface InventoryItem {
   fbaReserved: number
   fbaInbound: number // In transit from Vietnam or Amazon FC receiving
   dailyVelocity7d: number // units/day
+  /** Tuỳ chọn — Sprint 3.3 (migration 20260912); thiếu sẽ suy từ 7d/30d */
+  dailyVelocity14d?: number
   dailyVelocity30d: number // units/day
   daysOfSupply: number // available / velocity
   supplierLeadTimeDays: number // Vietnam factory + ocean/air shipping (e.g. 35 days)
