@@ -53,6 +53,14 @@ function MainAppShell() {
   }
 
   const renderActiveView = () => {
+    // Multi-tenant Security Guard: Client Suppliers only have access to their dedicated portals
+    if (useAppState().currentRole === 'CLIENT_SUPPLIER') {
+      const allowedSupplierTabs = ['supplier-portal', 'reports', 'inventory', 'user-profile']
+      if (!allowedSupplierTabs.includes(activeTab)) {
+        return <SupplierExecutivePortal />
+      }
+    }
+
     switch (activeTab) {
       // Deep-Tech v2.0 Desks
       case 'ppc-growth-desk':

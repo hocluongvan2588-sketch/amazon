@@ -271,7 +271,16 @@ export function AIOperationsCenter() {
             </span>
             <div>
               <div className="text-xs font-bold text-blue-950">
-                Không Gian AI Độc Quyền: {activePillar === 'PPC' ? 'PPC & Tăng Trưởng Doanh Thu' : activePillar === 'SUPPLY_CHAIN' ? 'Kho Vận & Quản Trị Chuỗi Cung Ứng' : activePillar === 'BRAND_CX' ? 'Thương Hiệu & Trải Nghiệm Khách Hàng' : 'Pháp Lý, FDA & Sức Khỏe Tài Khoản'}
+                Không Gian AI Chuyên Biệt:{' '}
+                {activePillar === 'PPC'
+                  ? 'PPC & Tăng Trưởng Doanh Thu (Lương Hoàng Minh Lead)'
+                  : activePillar === 'SUPPLY_CHAIN'
+                  ? 'Kho Vận & Chuỗi Cung Ứng FBA (Ánh Nguyễn Lead)'
+                  : activePillar === 'BRAND_CX'
+                  ? 'Thương Hiệu & Listing CRO (Trần Thu Hà Lead)'
+                  : activePillar === 'COMPLIANCE'
+                  ? 'Pháp Lý, FDA & Sức Khỏe Tài Khoản (Lê Hoàng Nam Lead)'
+                  : 'Phân Hệ Vận Hành Chuyên Trách Vexim'}
               </div>
               <div className="text-[11px] text-blue-700">
                 Chỉ hiển thị các đề xuất thuộc quyền hạn phê duyệt của bạn. Các phân hệ khác được cách ly an toàn.
