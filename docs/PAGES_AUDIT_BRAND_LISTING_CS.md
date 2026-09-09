@@ -16,7 +16,7 @@
 | **Brand Intel & CRO Desk** | ✅ | Mock (reverse-ASIN demo) | ❌→✅ **ĐÃ SỬA**: con số "+$7,460/tháng" hardcode → giờ tính động từ `estimatedRevenueUpliftMonthly` của diagnostics |
 | Badge **"2 CVR Gap"** (Sidebar) | ✅ | — | ❌→✅ **ĐÃ SỬA**: hardcode chuỗi "2" → giờ đếm động `conversionDiagnostics.length` (hiện đúng 2, tự cập nhật khi dữ liệu đổi) |
 | **Tối Ưu Listing & SEO** | ✅ | Mock + ENGINE THẬT | ✅ Tốt: đã có engine Sprint 3.2 (chấm 100 điểm thật, UTF-8 249 bytes, keyword gap) tích hợp ngay đầu trang |
-| **Sản Phẩm & Tiếp Nhận** | ✅ | DB khi LIVE / mock khi trống | ⚠️ Gap đã ghi nhận: ở chế độ DB, `documents`/`complianceIssues` map về `[]` (bảng `product_documents` có schema nhưng chưa hydrate) → tab hồ sơ hiện (0). Không crash (`readinessScore` có default an toàn) |
+| **Sản Phẩm & Tiếp Nhận** | ✅ | DB khi LIVE / mock khi trống | ❌→✅ **ĐÃ SỬA LẦN 2 (đợt sau phản hồi của anh)**: Readiness 94/89 là hardcode → giờ **engine chấm thật** (`lib/readiness-engine.ts`); nút "Tải lên chứng từ mới" là nút chết → giờ **upload thật** (metadata + localStorage, nhãn UNDER_REVIEW); margin 40.8% lưu cứng → giờ **tính từ giá/COGS/fees**; supabase-service gán cứng `canLaunch:true` → giờ engine chấm. Kết quả chấm lại: 70DK 88/100 (được launch), **PWD500 69/100 BỊ CHẶN** (thiếu COA+FDA), ROAST500 57/100 4 blockers |
 | **Chăm Sóc Khách Hàng (Inbox)** | ✅ | Mock (chưa nối DB `customer_inquiries`) | ✅ Phân loại SAFETY_CRITICAL/COMPLIANT/REFUND hoạt động, AI draft + gửi reply lưu localStorage |
 | Badge **"Khẩn"** | ✅ | Động | ✅ Đã động từ trước (`criticalSafetyMessages > 0`) |
 | Badge **"Nhiệm Vụ Content & CS (2)"** | ✅ | Động | ✅ Đã động từ trước (`openTasksCount`) |

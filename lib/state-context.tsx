@@ -17,6 +17,7 @@ import {
   PpcCampaign,
   PpcKeyword,
   Product,
+  ProductDocument,
   Promotion,
   SyncJob,
   UserRole,
@@ -78,6 +79,7 @@ import { SupabaseDatabaseService } from './supabase-service'
 import { DEFAULT_RATE_CARDS } from './logistics-engine'
 import { AIOperationsOrchestrator } from './ai-engine'
 import { DEMO_PASSWORD } from './auth-constants'
+import { computeReadiness } from './readiness-engine'
 import type { SyncResult } from './amazon-sp-api'
 
 export type ActiveNavTab =
@@ -190,6 +192,7 @@ interface AppStateContextType {
   applyListingDraft: (listingId: string) => Promise<void>
   sendCustomerReply: (messageId: string, replyText: string) => Promise<void>
   addProduct: (product: Partial<Product>) => void
+  addProductDocument: (productId: string, doc: ProductDocument) => void
   createCampaign: (campaign: Partial<PpcCampaign>) => void
   toggleCampaignStatus: (campaignId: string) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
@@ -292,7 +295,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   // Persistent Domain States
   const [clients, setClients] = useState<ClientSupplier[]>(() => loadFromStorage('vexim_clients', mockClients))
-  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('vexim_products', mockProducts))
+  const [products, setProducts] = useState<Product[]>(() => loadFromStorage('vexim_products_v2', mockProducts))
   const [listings, setListings] = useState<ListingData[]>(() => loadFromStorage('vexim_listings', mockListings))
   const [inventory, setInventory] = useState<InventoryItem[]>(() => loadFromStorage('vexim_inventory', mockInventory))
   const [orders, setOrders] = useState<Order[]>(() => loadFromStorage('vexim_orders', mockOrders))
@@ -355,7 +358,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => { saveToStorage('vexim_auth', isAuthenticated) }, [isAuthenticated])
   useEffect(() => { saveToStorage('vexim_team_members', teamMembers) }, [teamMembers])
   useEffect(() => { saveToStorage('vexim_tasks', tasks) }, [tasks])
-  useEffect(() => { saveToStorage('vexim_products', products) }, [products])
+  useEffect(() => { saveToStorage('vexim_products_v2', products) }, [products])
   useEffect(() => { saveToStorage('vexim_listings', listings) }, [listings])
   useEffect(() => { saveToStorage('vexim_inventory', inventory) }, [inventory])
   useEffect(() => { saveToStorage('vexim_recommendations', recommendations) }, [recommendations])
@@ -1094,18 +1097,11 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       weightLbs: prodData.weightLbs || 0.8,
       dimensionsInches: prodData.dimensionsInches || { length: 6, width: 4, height: 2 },
       status: 'COMPLIANCE_REVIEW',
+      // Sprint audit: điểm init 0 — engine chấm lại thật ngay bên dưới từ dữ liệu vừa nhập
       readinessScore: {
-        overall: 72,
-        productInfo: 85,
-        listingQuality: 70,
-        mediaAssets: 75,
-        keywordCoverage: 68,
-        pricingCompetitiveness: 80,
-        complianceScore: 70,
-        documentationScore: 65,
-        blockersCount: 1,
-        canLaunch: false,
-        recommendations: ['Cần xác thực phiếu kiểm nghiệm COA trước khi duyệt Launch.'],
+        overall: 0, productInfo: 0, listingQuality: 0, mediaAssets: 0, keywordCoverage: 0,
+        pricingCompetitiveness: 0, complianceScore: 0, documentationScore: 0,
+        blockersCount: 0, canLaunch: false, recommendations: [],
       },
       documents: prodData.documents || [],
       complianceIssues: [],
@@ -1113,8 +1109,18 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
       updatedAt: new Date().toISOString().slice(0, 10),
     }
 
+    // Sprint audit: readiness chấm TỪ DỮ LIỆU THẬT (trước đây hardcode 72/100 cho mọi sản phẩm mới)
+    newProd.readinessScore = computeReadiness(newProd)
     setProducts((prev) => [newProd, ...prev])
     showToast(`Đã tiếp nhận sản phẩm SKU ${newProd.sku} vào quy trình US Market Assessment.`, 'success')
+  }
+
+  // Sprint audit: thêm chứng từ (metadata) — file chưa upload cloud storage (Giai đoạn 4: Supabase Storage + OCR)
+  const addProductDocument = (productId: string, doc: ProductDocument) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === productId ? { ...p, documents: [doc, ...p.documents] } : p))
+    )
+    showToast(`Đã thêm chứng từ "${doc.title}" — trạng thái UNDER_REVIEW (chờ OCR & verify).`, 'success')
   }
 
   // 12. CONNECT AMAZON ACCOUNT
@@ -1608,6 +1614,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         applyListingDraft,
         sendCustomerReply,
         addProduct,
+        addProductDocument,
         createCampaign,
         toggleCampaignStatus,
         connectAmazonAccount,

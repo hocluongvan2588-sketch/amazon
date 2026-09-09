@@ -1,8 +1,9 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppState } from '@/lib/state-context'
-import { Product, ProductDocument } from '@/lib/types'
+import { Product, ProductDocument, ProductReadinessScore } from '@/lib/types'
+import { computeReadiness, computeMarginPct } from '@/lib/readiness-engine'
 import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
 import { Printer } from "lucide-react"
 import {
@@ -35,11 +36,60 @@ import {
 } from 'lucide-react'
 
 export function ProductManagement() {
-  const { filteredProducts, openModal, setActiveTab } = useAppState()
-  const [selectedProduct, setSelectedProduct] = useState<Product>(filteredProducts[0] || null)
+  const { filteredProducts, openModal, setActiveTab, harvestedSearchTerms, addProductDocument } = useAppState()
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(filteredProducts[0] || null)
   const [activeSubTab, setActiveSubTab] = useState<'DETAILS' | 'READINESS' | 'DOCUMENTS' | 'COMPLIANCE'>('READINESS')
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
   const [labelModalProduct, setLabelModalProduct] = useState<Product | null>(null)
+
+  // Sprint audit: readiness chấm THẬT từ dữ liệu sản phẩm qua lib/readiness-engine.ts
+  // (trước đây hiển thị điểm lưu sẵn 94/89/... trong mock-data — không phải điểm tính toán)
+  const searchTermPool = useMemo(
+    () => harvestedSearchTerms.map((t) => t.searchTerm),
+    [harvestedSearchTerms]
+  )
+  const scoredById = useMemo(() => {
+    const map = new Map<string, ProductReadinessScore>()
+    filteredProducts.forEach((p) => map.set(p.id, computeReadiness(p, searchTermPool)))
+    return map
+  }, [filteredProducts, searchTermPool])
+  const selectedScore = selectedProduct
+    ? scoredById.get(selectedProduct.id) || computeReadiness(selectedProduct, searchTermPool)
+    : null
+
+  // giữ selection luôn hợp lệ khi danh sách thay đổi (hydrate DB / intake / đổi client)
+  useEffect(() => {
+    if (filteredProducts.length === 0) {
+      if (selectedProduct !== null) setSelectedProduct(null)
+      return
+    }
+    if (!selectedProduct || !filteredProducts.some((p) => p.id === selectedProduct.id)) {
+      setSelectedProduct(filteredProducts[0])
+    }
+  }, [filteredProducts, selectedProduct])
+
+  // Upload chứng từ: nhập metadata THẬT từ file người dùng chọn (lưu localStorage).
+  // File chưa upload lên cloud storage & chưa OCR — trạng thái UNDER_REVIEW, minh bạch với người dùng.
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploadDocType, setUploadDocType] = useState<ProductDocument['type']>('COA')
+  const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !selectedProduct) return
+    addProductDocument(selectedProduct.id, {
+      id: `doc-${Date.now()}`,
+      title: file.name.replace(/\.[^.]+$/, ''),
+      type: uploadDocType,
+      fileUrl: '#',
+      fileName: file.name,
+      fileSize:
+        file.size > 1048576
+          ? `${(file.size / 1048576).toFixed(1)} MB`
+          : `${Math.max(1, Math.round(file.size / 1024))} KB`,
+      uploadDate: new Date().toISOString().slice(0, 10),
+      status: 'UNDER_REVIEW',
+    })
+    e.target.value = ''
+  }
 
   return (
     <div className="space-y-6">
@@ -93,7 +143,8 @@ export function ProductManagement() {
           <div className="space-y-2.5">
             {filteredProducts.map((prod) => {
               const isSelected = selectedProduct?.id === prod.id
-              const hasBlockers = prod.readinessScore.blockersCount > 0
+              const pScore = scoredById.get(prod.id)
+              const hasBlockers = (pScore?.blockersCount || 0) > 0
 
               return (
                 <button
@@ -139,7 +190,7 @@ export function ProductManagement() {
                             hasBlockers ? 'text-red-600' : 'text-emerald-600'
                           }`}
                         >
-                          {prod.readinessScore.overall}/100
+                          {pScore?.overall ?? '—'}/100
                         </span>
                       </div>
                     </div>
@@ -181,14 +232,14 @@ export function ProductManagement() {
                       <span>Thương hiệu: <strong className="text-slate-900">{selectedProduct.brand}</strong></span>
                       <span>Giá bán: <strong className="text-slate-900">${selectedProduct.price.toFixed(2)}</strong></span>
                       <span>Giá vốn xuất xưởng (COGS): <strong className="text-slate-900">${selectedProduct.cogs.toFixed(2)}</strong></span>
-                      <span>Biên lợi nhuận ròng: <strong className="text-emerald-600">{selectedProduct.estimatedMargin}%</strong></span>
+                      <span>Biên lợi nhuận ròng: <strong className="text-emerald-600">{computeMarginPct(selectedProduct)}%</strong></span>
                     </div>
                   </div>
                 </div>
 
                 {/* Launch Action Button or Block Badge */}
                 <div className="shrink-0 flex flex-col items-end gap-1.5">
-                  {selectedProduct.readinessScore.canLaunch ? (
+                  {selectedScore?.canLaunch ? (
                     <button
                       onClick={() => setActiveTab('listings')}
                       className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all"
@@ -199,7 +250,7 @@ export function ProductManagement() {
                   ) : (
                     <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
                       <Lock size={14} />
-                      <span>BLOCK LAUNCH ({selectedProduct.readinessScore.blockersCount} Blockers)</span>
+                      <span>BLOCK LAUNCH ({selectedScore?.blockersCount ?? 0} Blockers)</span>
                     </div>
                   )}
                 </div>
@@ -237,13 +288,14 @@ export function ProductManagement() {
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">Điểm Đánh giá Sẵn sàng (Amazon Readiness)</h3>
                       <p className="text-xs text-slate-400">
-                        Thuật toán chấm điểm 8 tiêu chí chuẩn mực trước khi xuất khẩu và bán trên Amazon US
+                        Engine chấm 7 tiêu chí TRỰC TIẾP từ dữ liệu sản phẩm (title, ảnh, chi phí, chứng từ, pháp lý,
+                        keyword harvest) — không dùng điểm lưu sẵn
                       </p>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-black font-mono text-slate-900">
-                        {selectedProduct.readinessScore.overall}
+                        {selectedScore?.overall ?? '—'}
                       </span>
                       <span className="text-xs font-semibold text-slate-400">/ 100 Điểm</span>
                     </div>
@@ -252,13 +304,13 @@ export function ProductManagement() {
                   {/* 7 Component Progress Bars */}
                   <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {[
-                      { label: '1. Thông tin sản phẩm (Product Specs)', score: selectedProduct.readinessScore.productInfo },
-                      { label: '2. Chất lượng Listing (Listing Quality)', score: selectedProduct.readinessScore.listingQuality },
-                      { label: '3. Hình ảnh & Media Assets', score: selectedProduct.readinessScore.mediaAssets },
-                      { label: '4. Độ phủ Từ khóa (Keyword Coverage)', score: selectedProduct.readinessScore.keywordCoverage },
-                      { label: '5. Giá bán & Cạnh tranh (Pricing)', score: selectedProduct.readinessScore.pricingCompetitiveness },
-                      { label: '6. Tuân thủ Pháp lý (Compliance)', score: selectedProduct.readinessScore.complianceScore },
-                      { label: '7. Hồ sơ Chứng từ (Documentation)', score: selectedProduct.readinessScore.documentationScore },
+                      { label: '1. Thông tin sản phẩm (Product Specs)', score: selectedScore?.productInfo ?? 0 },
+                      { label: '2. Chất lượng Listing (Listing Quality)', score: selectedScore?.listingQuality ?? 0 },
+                      { label: '3. Hình ảnh & Media Assets', score: selectedScore?.mediaAssets ?? 0 },
+                      { label: '4. Độ phủ Từ khóa (Keyword Coverage)', score: selectedScore?.keywordCoverage ?? 0 },
+                      { label: '5. Giá bán & Cạnh tranh (Pricing)', score: selectedScore?.pricingCompetitiveness ?? 0 },
+                      { label: '6. Tuân thủ Pháp lý (Compliance)', score: selectedScore?.complianceScore ?? 0 },
+                      { label: '7. Hồ sơ Chứng từ (Documentation)', score: selectedScore?.documentationScore ?? 0 },
                     ].map((item) => (
                       <div key={item.label} className="space-y-1">
                         <div className="flex justify-between text-xs">
@@ -285,10 +337,10 @@ export function ProductManagement() {
                   <div className="mt-5 rounded-lg bg-slate-50 p-4 border border-slate-100 space-y-2">
                     <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                       <Sparkles size={14} className="text-blue-600" />
-                      Khuyến nghị từ AI Compliance & Readiness Engine:
+                      Khuyến nghị tự động — sinh từ khoảng trống dữ liệu thật của sản phẩm:
                     </div>
                     <ul className="space-y-1.5 text-xs text-slate-600">
-                      {selectedProduct.readinessScore.recommendations.map((rec, idx) => (
+                      {(selectedScore?.recommendations || []).map((rec, idx) => (
                         <li key={idx} className="flex items-start gap-2">
                           <span className="text-blue-600 font-bold">•</span>
                           <span>{rec}</span>
@@ -307,18 +359,48 @@ export function ProductManagement() {
                   <div>
                     <h3 className="text-sm font-bold text-slate-900">Hồ sơ Pháp lý & Chứng nhận Xuất xứ</h3>
                     <p className="text-xs text-slate-400">
-                      Tự động trích xuất dữ liệu bằng AI Document OCR Extractor (Section 28)
+                      Nhập liệu thủ công — AI OCR Extractor (Section 28) CHƯA kết nối dịch vụ (lộ trình Giai đoạn 4);
+                      chứng từ mới sẽ ở trạng thái UNDER_REVIEW
                     </p>
                   </div>
-                  <button className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">
-                    <Upload size={13} />
-                    <span>Tải lên chứng từ mới</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={uploadDocType}
+                      onChange={(e) => setUploadDocType(e.target.value as ProductDocument['type'])}
+                      className="rounded-lg border border-border bg-white px-2 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      <option value="COA">COA (Kiểm nghiệm)</option>
+                      <option value="FDA_REGISTRATION">FDA Registration</option>
+                      <option value="LABEL_SPEC">Label Spec</option>
+                      <option value="USDA_ORGANIC">USDA Organic</option>
+                      <option value="SAFETY_DATA">Safety Data Sheet</option>
+                      <option value="PHYTOSANITARY">Phytosanitary</option>
+                      <option value="FACTORY_AUDIT">Factory Audit</option>
+                    </select>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      <Upload size={13} />
+                      <span>Tải lên chứng từ mới</span>
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg"
+                      className="hidden"
+                      onChange={handleDocUpload}
+                    />
+                  </div>
                 </div>
 
                 {selectedProduct.documents.length === 0 ? (
                   <div className="py-10 text-center text-slate-400 text-xs">
                     Chưa có tài liệu nào được tải lên cho sản phẩm này.
+                    <div className="mt-2 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 inline-block text-left">
+                      Lưu ý vận hành: chứng từ hiện lưu metadata cục bộ (localStorage) và chưa qua OCR.
+                      Lưu trữ đám mây + trích xuất tự động thuộc Giai đoạn 4 (Supabase Storage).
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">

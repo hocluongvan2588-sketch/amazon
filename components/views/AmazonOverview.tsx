@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAppState } from '@/lib/state-context'
+import { computeReadiness, computeMarginPct } from '@/lib/readiness-engine'
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -407,7 +408,7 @@ export function AmazonOverview() {
                   </td>
                   <td className="py-3 px-3 font-semibold text-slate-900">${prod.price.toFixed(2)}</td>
                   <td className="py-3 px-3">
-                    <span className="font-bold text-emerald-600">{prod.estimatedMargin}%</span>
+                    <span className="font-bold text-emerald-600">{computeMarginPct(prod)}%</span>
                   </td>
                   <td className="py-3 px-3">
                     <span className="font-medium text-slate-800">
@@ -422,13 +423,13 @@ export function AmazonOverview() {
                       <div className="h-2 w-16 overflow-hidden rounded-full bg-slate-100">
                         <div
                           className={`h-full ${
-                            prod.readinessScore.overall >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
+                            computeReadiness(prod).overall >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
                           }`}
-                          style={{ width: `${prod.readinessScore.overall}%` }}
+                          style={{ width: `${computeReadiness(prod).overall}%` }}
                         />
                       </div>
                       <span className="font-mono text-[11px] font-bold text-slate-700">
-                        {prod.readinessScore.overall}/100
+                        {computeReadiness(prod).overall}/100
                       </span>
                     </div>
                   </td>

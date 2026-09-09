@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabase'
+import { computeReadiness } from './readiness-engine'
 import {
   AIRecommendation,
   AuditLogEntry,
@@ -175,19 +176,27 @@ export class SupabaseDatabaseService {
         weightLbs: Number(p.weight_lbs || 0.95),
         dimensionsInches: p.dimensions_inches || { length: 7, width: 3, height: 2 },
         status: p.status || 'ACTIVE',
-        readinessScore: {
-          overall: p.readiness_score || 90,
-          productInfo: 95,
-          listingQuality: 90,
-          mediaAssets: 90,
-          keywordCoverage: 88,
-          pricingCompetitiveness: 92,
-          complianceScore: 95,
-          documentationScore: 90,
-          blockersCount: 0,
-          canLaunch: true,
-          recommendations: ['Đã đồng bộ từ Supabase Database'],
-        },
+        // Sprint audit: CHẤM THẬT bằng readiness-engine từ dữ liệu row DB
+        // (trước đây hardcode canLaunch:true cho MỌI sản phẩm — nguy hiểm khi ra quyết định launch)
+        readinessScore: computeReadiness({
+          title: p.title,
+          brand: p.brand,
+          category: p.category,
+          subCategory: p.sub_category || '',
+          mainImage: p.main_image || '',
+          galleryImages: p.gallery_images || [],
+          price: Number(p.price),
+          cogs: Number(p.cogs),
+          fbaFeeEstimated: Number(p.fba_fee_estimated || 0),
+          referralFeeEstimated: Number(p.referral_fee_estimated || 0),
+          estimatedMargin: Number(p.estimated_margin_pct || 0),
+          weightLbs: Number(p.weight_lbs || 0),
+          dimensionsInches: p.dimensions_inches || { length: 0, width: 0, height: 0 },
+          upc: p.upc || '',
+          fnsku: p.fnsku || '',
+          documents: [],
+          complianceIssues: [],
+        }),
         documents: [],
         complianceIssues: [],
         createdAt: p.created_at,
