@@ -17,7 +17,7 @@
 | Badge **"2 CVR Gap"** (Sidebar) | ✅ | — | ❌→✅ **ĐÃ SỬA**: hardcode chuỗi "2" → giờ đếm động `conversionDiagnostics.length` (hiện đúng 2, tự cập nhật khi dữ liệu đổi) |
 | **Tối Ưu Listing & SEO** | ✅ | Mock + ENGINE THẬT | ❌→✅ **ĐÃ SỬA LẦN 2**: nút "AI Phân tích lại" là setTimeout giả → giờ chạy engine thật; áp draft hardcode 96/'A+' → giờ chấm lại từ nội dung mới (kèm fix mất backend terms khi áp draft); code chết `pushListingUpdate` bịa "Feed ID ACCEPTED" đã xóa. **GĐ4 anh đã duyệt — ĐÃ XÂY XONG**: editor thật (tab ✎ Editor), upload ảnh Supabase Storage (`product-images`), bảng `amazon_listings` trong DB (migration 20260914), PATCH thật lên Seller Central (`lib/sp-api-listings.ts` — LIVE khi cấp credentials, SIMULATED trung thực khi thiếu). A+ đẩy riêng qua A+ Content Publishing API (sprint sau) |
 | **Sản Phẩm & Tiếp Nhận** | ✅ | DB khi LIVE / mock khi trống | ❌→✅ **ĐÃ SỬA LẦN 2 (đợt sau phản hồi của anh)**: Readiness 94/89 là hardcode → giờ **engine chấm thật** (`lib/readiness-engine.ts`); nút "Tải lên chứng từ mới" là nút chết → giờ **upload thật** (metadata + localStorage, nhãn UNDER_REVIEW); margin 40.8% lưu cứng → giờ **tính từ giá/COGS/fees**; supabase-service gán cứng `canLaunch:true` → giờ engine chấm. Kết quả chấm lại: 70DK 88/100 (được launch), **PWD500 69/100 BỊ CHẶN** (thiếu COA+FDA), ROAST500 57/100 4 blockers |
-| **Chăm Sóc Khách Hàng (Inbox)** | ✅ | Mock (chưa nối DB `customer_inquiries`) | ✅ Phân loại SAFETY_CRITICAL/COMPLIANT/REFUND hoạt động, AI draft + gửi reply lưu localStorage |
+| **Chăm Sóc Khách Hàng (Inbox)** | ✅ | DB `customer_inquiries` (Sprint 4.1) | ❌→✅ **ĐÃ SỬA**: hydrate từ DB (migration 20260915); reply gửi thật qua Messaging API + RDT khi có credentials (SIMULATED trung thực khi thiếu) + luôn ghi DB — hết toast nói dối "đã gửi qua Amazon" |
 | Badge **"Khẩn"** | ✅ | Động | ✅ Đã động từ trước (`criticalSafetyMessages > 0`) |
 | Badge **"Nhiệm Vụ Content & CS (2)"** | ✅ | Động | ✅ Đã động từ trước (`openTasksCount`) |
 | **Giáo Trình Brand & CS — Module 04** | ✅ | **Đầy đủ** | ✅ Module 04 tồn tại với nội dung dày: Title Formula, 5 Bullets chuẩn, Safety Gate CS. ❌→✅ **ĐÃ SỬA UX**: trước đây cả 3 nút "Giáo Trình" (PPC/Kho/Brand) đều mở Module 01 → giờ tự mở đúng module theo không gian làm việc (Brand&CS→04, PPC→02, Kho→03) |
@@ -41,7 +41,7 @@ Rà soát nhóm trang này phát hiện mật khẩu thật bị lộ tại **5 
 
 1. **Reverse ASIN / Market Radar** (Brand Intel): dữ liệu vẫn demo — cần Amazon Brand Analytics (AQ Search Terms) hoặc API bên thứ 3 (Helium10/JungleScout) để có số thật.
 2. **Hồ sơ & chứng chỉ sản phẩm** ở chế độ DB: hydrate bảng `product_documents` + `product_compliance` như đã làm với inventory/orders.
-3. **Inbox khách hàng**: nối bảng `customer_inquiries` (schema sẵn) + đồng bộ Customer Service API của Amazon.
+3. ~~Inbox khách hàng~~ **XONG Sprint 4.1**: bảng `customer_inquiries` + Messaging API (RDT) — phần còn lại: sync nguồn tin vào DB (email forwarding/webhook) thuộc hạ tầng ngoài app.
 4. **Đổi mật khẩu thật**: qua Supabase Auth (`auth.updateUser`), thay flow client-side hiện tại.
 
 ## 4. Danh sách file sửa trong đợt này

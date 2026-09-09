@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 import { computeReadiness } from './readiness-engine'
+import { CustomerMessage, ProductDocument } from './types'
 import { ListingData } from './types'
 import { scoreListing, toListingScorecard } from './listing-quality'
 import {
@@ -620,6 +621,141 @@ export class SupabaseDatabaseService {
     } catch (err) {
       console.warn('[Supabase] uploadListingImage catch:', err)
       return null
+    }
+  }
+
+  // ==================== SPRINT 4.1: INBOX + PRODUCT DOCUMENTS ====================
+
+  /** Inbox CS từ DB (nguồn: email forwarding / nhập tay / webhook — Amazon
+   *  KHÔNG mở endpoint đọc hộp thư buyer). Map snake_case -> CustomerMessage. */
+  static async getCustomerMessages(clientId?: string): Promise<CustomerMessage[] | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      let query = supabase.from('customer_inquiries').select('*').order('received_at', { ascending: false })
+      if (clientId && clientId !== 'ALL') query = query.eq('client_id', clientId)
+      const { data, error } = await query
+      if (error || !data || data.length === 0) return null
+      return data.map((r: any) => ({
+        id: r.id,
+        clientId: r.client_id,
+        amazonMessageId: r.amazon_message_id || '',
+        orderId: r.amazon_order_id || undefined,
+        customerName: r.customer_name || 'Khách hàng',
+        receivedAt: r.received_at || new Date().toISOString(),
+        messageSubject: r.message_subject || '',
+        messageBody: r.message_body || '',
+        classification: r.classification || 'NORMAL_INQUIRY',
+        safetyRiskDetected: Boolean(r.safety_risk_detected),
+        safetyKeywords: r.safety_keywords || [],
+        aiSuggestedDraft: r.ai_suggested_draft || '',
+        finalReply: r.final_reply || undefined,
+        status: r.status || 'UNREAD',
+        approvedBy: r.approved_by || undefined,
+        sentAt: r.sent_at || undefined,
+      }))
+    } catch (err) {
+      console.warn('[Supabase] getCustomerMessages error:', err)
+      return null
+    }
+  }
+
+  /** Lưu 1 inquiry (dùng khi reply/cập nhật trạng thái để không mất khi đổi máy). */
+  static async upsertCustomerMessage(m: CustomerMessage): Promise<boolean> {
+    if (!isSupabaseConfigured()) return false
+    try {
+      const { error } = await supabase.from('customer_inquiries').upsert(
+        {
+          id: m.id,
+          client_id: m.clientId,
+          amazon_message_id: m.amazonMessageId || null,
+          amazon_order_id: m.orderId || null,
+          customer_name: m.customerName,
+          received_at: m.receivedAt,
+          message_subject: m.messageSubject,
+          message_body: m.messageBody,
+          classification: m.classification,
+          safety_risk_detected: m.safetyRiskDetected,
+          safety_keywords: m.safetyKeywords || [],
+          ai_suggested_draft: m.aiSuggestedDraft,
+          final_reply: m.finalReply || null,
+          status: m.status,
+          approved_by: m.approvedBy || null,
+          sent_at: m.sentAt || null,
+        },
+        { onConflict: 'id' }
+      )
+      if (error) console.warn('[Supabase] upsertCustomerMessage:', error.message)
+      return !error
+    } catch (err) {
+      console.warn('[Supabase] upsertCustomerMessage catch:', err)
+      return false
+    }
+  }
+
+  /** Chứng từ sản phẩm từ DB (kèm storage_path để lấy signed URL private nếu cần). */
+  static async getProductDocuments(sku?: string): Promise<(ProductDocument & { clientId: string; productId?: string; storagePath?: string })[] | null> {
+    if (!isSupabaseConfigured()) return null
+    try {
+      let query = supabase.from('product_documents').select('*').order('upload_date', { ascending: false })
+      if (sku) query = query.eq('sku', sku)
+      const { data, error } = await query
+      if (error || !data || data.length === 0) return null
+      return data.map((r: any) => ({
+        id: r.id,
+        clientId: r.client_id,
+        productId: r.product_id || undefined,
+        title: r.title,
+        type: r.type,
+        fileName: r.file_name || '',
+        fileUrl: r.file_url || '#',
+        storagePath: r.storage_path || undefined,
+        fileSize: r.file_size || '',
+        uploadDate: (r.upload_date || '').slice(0, 10),
+        status: r.status || 'UNDER_REVIEW',
+        extractedData: r.extracted_data || undefined,
+      }))
+    } catch (err) {
+      console.warn('[Supabase] getProductDocuments error:', err)
+      return null
+    }
+  }
+
+  /** Upload file chứng từ lên bucket PRIVATE compliance-docs + ghi row DB. */
+  static async uploadProductDocument(
+    clientId: string,
+    sku: string,
+    doc: ProductDocument,
+    file: File
+  ): Promise<{ ok: boolean; storagePath?: string }> {
+    if (!isSupabaseConfigured()) return { ok: false }
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${clientId}/${sku}/${Date.now()}-${safeName}`
+      const { error } = await supabase.storage
+        .from('compliance-docs')
+        .upload(path, file, { contentType: file.type || 'application/pdf', upsert: false })
+      if (error) {
+        console.warn('[Supabase] uploadProductDocument:', error.message)
+        return { ok: false }
+      }
+      const { error: dbErr } = await supabase.from('product_documents').upsert({
+        id: doc.id,
+        client_id: clientId,
+        sku,
+        title: doc.title,
+        type: doc.type,
+        file_name: doc.fileName,
+        file_url: '#', // bucket private — đọc qua createSignedUrl khi cần xem
+        storage_path: path,
+        file_size: doc.fileSize,
+        status: doc.status || 'UNDER_REVIEW',
+        extracted_data: doc.extractedData || {},
+      })
+      if (dbErr) console.warn('[Supabase] product_documents insert:', dbErr.message)
+      return { ok: !dbErr, storagePath: path }
+    } catch (err) {
+      console.warn('[Supabase] uploadProductDocument catch:', err)
+      return { ok: false }
     }
   }
 }

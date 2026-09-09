@@ -75,6 +75,7 @@ import {
   mockSpApiQueueStatus,
 } from './mock-data'
 import { spApiConnector } from './amazon-sp-api'
+import { isSupabaseConfigured } from './supabase'
 import { SupabaseDatabaseService } from './supabase-service'
 import { DEFAULT_RATE_CARDS } from './logistics-engine'
 import { AIOperationsOrchestrator } from './ai-engine'
@@ -197,6 +198,7 @@ interface AppStateContextType {
   rescoreListing: (listingId: string) => void
   saveListingEdits: (listing: ListingData) => Promise<ListingData>
   pushListingToAmazon: (listing: ListingData, imageUrl?: string) => Promise<{ ok: boolean; json: any }>
+  pushAplusToAmazon: (listing: ListingData, opts?: { action?: 'SUBMIT' | 'PUBLISH'; refKey?: string }) => Promise<{ ok: boolean; json: any }>
   createCampaign: (campaign: Partial<PpcCampaign>) => void
   toggleCampaignStatus: (campaignId: string) => void
   connectAmazonAccount: (clientId: string) => Promise<void>
@@ -378,7 +380,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
     async function loadLiveSupabaseData() {
       try {
-        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards, liveOrders, liveListings] = await Promise.all([
+        const [liveUsers, liveClients, liveProducts, liveInventory, liveRateCards, liveOrders, liveListings, liveMessages] = await Promise.all([
           SupabaseDatabaseService.getUsers(),
           SupabaseDatabaseService.getClients(),
           SupabaseDatabaseService.getProducts(),
@@ -386,6 +388,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           SupabaseDatabaseService.getFreightRateCards(),
           SupabaseDatabaseService.getOrders(),
           SupabaseDatabaseService.getListings(),
+          SupabaseDatabaseService.getCustomerMessages(),
         ])
 
         if (!isMounted) return
@@ -423,6 +426,24 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
           // GĐ4: listings sống trong DB — nội dung Editor/Seller Central không còn phụ thuộc máy này
           setListings(liveListings)
           saveToStorage('vexim_listings', liveListings)
+        }
+        if (liveMessages && liveMessages.length > 0) {
+          // Sprint 4.1: Inbox CS sống trong DB (không còn chỉ localStorage)
+          setCustomerMessages(liveMessages)
+          saveToStorage('vexim_messages', liveMessages)
+        }
+        // Sprint 4.1: gắn chứng từ DB vào products (tab Hồ sơ & Chứng chỉ)
+        const liveDocs = await SupabaseDatabaseService.getProductDocuments()
+        if (liveDocs && liveDocs.length > 0) {
+          setProducts((prev) =>
+            prev.map((pr) => {
+              const dbDocs = liveDocs.filter((d) => d.productId === pr.id || (d as any).sku === pr.sku)
+              if (dbDocs.length === 0) return pr
+              const merged = [...dbDocs.map(({ clientId, storagePath, ...doc }: any) => doc as any), ...pr.documents]
+              const seen = new Set<string>()
+              return { ...pr, documents: merged.filter((d) => (seen.has(d.id) ? false : (seen.add(d.id), true))) }
+            })
+          )
         }
       } catch (err) {
         console.info('[Vexim State] Running in persistent hybrid mode.')
@@ -1116,6 +1137,58 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Sprint 4.1: đẩy A+ Content qua A+ Content Publishing API (SUBMIT duyệt / PUBLISH)
+  const pushAplusToAmazon = async (
+    listing: ListingData,
+    opts?: { action?: 'SUBMIT' | 'PUBLISH'; refKey?: string }
+  ) => {
+    const modules = (listing.aplusModules || [])
+      .filter((m) => m.headline || m.body)
+      .map((m) => ({ headline: m.headline, body: m.body, imageUrl: m.imageUrl }))
+    if (modules.length === 0) {
+      showToast('Chưa có module A+ nào có nội dung — điền headline/body trước khi đẩy.', 'error')
+      return { ok: false as const, json: null }
+    }
+    if (!listing.asin) {
+      showToast('Listing chưa có ASIN — A+ gán theo ASIN, hãy cập nhật ASIN trước.', 'error')
+      return { ok: false as const, json: null }
+    }
+    try {
+      const res = await fetch('/api/amazon/aplus/push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          asin: listing.asin,
+          name: `Vexim A+ ${listing.sku} ${new Date().toISOString().slice(0, 10)}`,
+          modules,
+          action: opts?.action || 'SUBMIT',
+          refKey: opts?.refKey,
+        }),
+      })
+      const json = await res.json()
+      const result = json?.result
+      if (!res.ok || !result?.success) {
+        const m0 = result?.issues?.map((i: any) => i.message).join(' | ') || `HTTP ${res.status}`
+        showToast(`A+ push thất bại: ${m0}`, 'error')
+        return { ok: false as const, json }
+      }
+      if (result.mode === 'SIMULATED') {
+        showToast('A+ MÔ PHỎNG: payload hợp lệ, chưa gửi tới Amazon (cần credentials SP-API).', 'info')
+      } else if (opts?.action === 'PUBLISH') {
+        showToast(`Đã gửi lệnh publish A+ lên ASIN ${listing.asin} (HTTP ${result.status}).`, 'success')
+      } else {
+        showToast(
+          `Đã tạo A+ document (${result.contentReferenceKey}) + nộp duyệt — Amazon rà soát ~24-48h rồi mới publish được.`,
+          'success'
+        )
+      }
+      return { ok: true as const, json }
+    } catch (err: any) {
+      showToast(`Lỗi kết nối A+ API: ${String(err?.message || err).slice(0, 120)}`, 'error')
+      return { ok: false as const, json: null }
+    }
+  }
+
   // Sprint audit: nút "chấm lại" chạy engine thật (trước đây là setTimeout 1s giả "AI đang phân tích")
   const rescoreListing = (listingId: string) => {
     let overall = 0
@@ -1177,21 +1250,53 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
   }
 
   // 10. SEND CUSTOMER REPLY
+  // Sprint 4.1: gửi reply THẬT qua Messaging API (createRestrictedMessage + RDT)
+  // khi có orderId & credentials; luôn lưu nội dung vào DB (upsert) để không mất.
   const sendCustomerReply = async (messageId: string, replyText: string) => {
+    const msg = customerMessages.find((m) => m.id === messageId)
+    const sentAt = new Date().toISOString()
     setCustomerMessages((prev) =>
       prev.map((m) =>
         m.id === messageId
-          ? {
-              ...m,
-              status: 'SENT',
-              finalReply: replyText,
-              approvedBy: currentRole,
-              sentAt: new Date().toISOString(),
-            }
+          ? { ...m, status: 'SENT', finalReply: replyText, approvedBy: currentRole, sentAt }
           : m
       )
     )
-    showToast('Đã gửi phản hồi chính thức tới khách hàng qua Amazon Buyer-Seller Messaging.', 'success')
+    if (msg) {
+      const saved = await SupabaseDatabaseService.upsertCustomerMessage({
+        ...msg,
+        status: 'SENT',
+        finalReply: replyText,
+        approvedBy: currentRole,
+        sentAt,
+      })
+      if (!saved && isSupabaseConfigured()) {
+        showToast('Đã lưu cục bộ nhưng GHI DB THẤT BẠI — chạy migration 20260915 (bảng customer_inquiries).', 'error')
+      }
+    }
+    if (!msg?.orderId) {
+      showToast('Đã ghi nhận phản hồi cục bộ (tin nhắn không có mã đơn — Amazon không cho gửi ngoài messaging window).', 'info')
+      return
+    }
+    try {
+      const res = await fetch('/api/amazon/messages/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amazonOrderId: msg.orderId, text: replyText }),
+      })
+      const json = await res.json()
+      const result = json?.result
+      if (res.ok && result?.success && result.mode === 'LIVE') {
+        showToast(`Đã gửi qua Amazon Messaging (wam ${result.submissionId || result.status}).`, 'success')
+      } else if (res.ok && result?.success && result.mode === 'SIMULATED') {
+        showToast('Chế độ MÔ PHỎNG: reply lưu nội bộ, CHƯA gửi tới Amazon (cần credentials SP-API).', 'info')
+      } else {
+        const m0 = result?.issues?.[0]?.message || `HTTP ${res.status}`
+        showToast(`Gửi qua Amazon thất bại: ${m0} — nội dung vẫn lưu trong inbox.`, 'error')
+      }
+    } catch (err: any) {
+      showToast(`Lỗi kết nối messaging: ${String(err?.message || err).slice(0, 120)} — nội dung vẫn lưu trong inbox.`, 'error')
+    }
   }
 
   // 11. ADD PRODUCT
@@ -1740,6 +1845,7 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
         rescoreListing,
         saveListingEdits,
         pushListingToAmazon,
+        pushAplusToAmazon,
         createCampaign,
         toggleCampaignStatus,
         connectAmazonAccount,

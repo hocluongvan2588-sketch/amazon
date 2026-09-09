@@ -42,3 +42,21 @@ Payload PATCH chuẩn JSON-PATCH 6 path: `/attributes/title`, `bullet_point`,
   Amazon yêu cầu A+ Content Publishing API 2020-11-01 riêng (sprint tiếp theo).
 - **Ảnh**: Amazon copy ảnh từ URL public — bucket `product-images` phải public đọc được.
 - Khi thiếu credentials, nút Đẩy luôn báo MÔ PHỎNG (không bịa Feed ID như code cũ).
+
+---
+
+# SPRINT 4.1 — A+ CONTENT PUBLISHING + INBOX/DOCUMENTS HYDRATION (2026-09-09)
+
+Anh đã duyệt và chạy migration 20260914. Sprint này bổ sung:
+
+| Hạng mục | File | Trạng thái |
+|---|---|---|
+| **A+ Content Publishing API** | `lib/sp-api-aplus.ts` (create → gán ASIN → nộp duyệt; publish riêng), `app/api/amazon/aplus/push`, tab A+ trong Listing trở thành **editor thật** (≤5 module headline/body/ảnh + preview, Lưu DB, Nộp duyệt Amazon) | ✅ SIMULATED khi thiếu credentials, LIVE khi đủ |
+| **Hydrate Inbox CS** | Migration `20260915_customer_inquiries_documents.sql` (bảng `customer_inquiries`) + `getCustomerMessages/upsertCustomerMessage` + hydrate state | ✅ Inbox sống trong DB; reply ghi DB |
+| **Communication (Buyer Messaging)** | `app/api/amazon/messages/send` — RDT (`/tokens/2021-06-30/restrictedResources`) → `POST /messaging/v1/orders/{orderId}/messages/createRestrictedMessage` | ✅ LIVE khi đủ env; `sendCustomerReply` giờ phản ánh đúng kết quả (không còn toast nói dối "đã gửi qua Amazon") |
+| **Product Documents** | Bảng `product_documents` + upload file lên bucket private `compliance-docs` + hydrate gắn vào tab Hồ sơ & Chứng chỉ | ✅ |
+
+**Lưu ý minh bạch (đã ghi trên UI/toast):**
+- Amazon KHÔNG mở endpoint đọc hộp thư buyer — inbox nguồn từ DB (email forwarding/nhập tay); API chỉ GỬI được loại tin cho phép, cần RDT, và chỉ trong 30 ngày messaging window.
+- A+ theo đúng luồng Amazon: tạo → nộp duyệt → Amazon review 24-48h → publish sau APPROVED.
+- **Anh cần chạy thêm migration `20260915`** để bảng inbox + documents hoạt động.

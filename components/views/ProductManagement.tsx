@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppState } from '@/lib/state-context'
 import { Product, ProductDocument, ProductReadinessScore } from '@/lib/types'
 import { computeReadiness, computeMarginPct } from '@/lib/readiness-engine'
+import { SupabaseDatabaseService } from '@/lib/supabase-service'
 import { BarcodeAndLabelPrintModal } from "@/components/modals/BarcodeAndLabelPrintModal"
 import { Printer } from "lucide-react"
 import {
@@ -36,7 +37,7 @@ import {
 } from 'lucide-react'
 
 export function ProductManagement() {
-  const { filteredProducts, openModal, setActiveTab, harvestedSearchTerms, addProductDocument } = useAppState()
+  const { filteredProducts, openModal, setActiveTab, harvestedSearchTerms, addProductDocument, selectedClientId, showToast } = useAppState()
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(filteredProducts[0] || null)
   const [activeSubTab, setActiveSubTab] = useState<'DETAILS' | 'READINESS' | 'DOCUMENTS' | 'COMPLIANCE'>('READINESS')
   const [isLabelModalOpen, setIsLabelModalOpen] = useState(false)
@@ -72,10 +73,12 @@ export function ProductManagement() {
   // File chưa upload lên cloud storage & chưa OCR — trạng thái UNDER_REVIEW, minh bạch với người dùng.
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadDocType, setUploadDocType] = useState<ProductDocument['type']>('COA')
-  const handleDocUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !selectedProduct) return
-    addProductDocument(selectedProduct.id, {
+    setUploadingDoc(true)
+    const doc: ProductDocument = {
       id: `doc-${Date.now()}`,
       title: file.name.replace(/\.[^.]+$/, ''),
       type: uploadDocType,
@@ -87,7 +90,26 @@ export function ProductManagement() {
           : `${Math.max(1, Math.round(file.size / 1024))} KB`,
       uploadDate: new Date().toISOString().slice(0, 10),
       status: 'UNDER_REVIEW',
-    })
+    }
+    // Sprint 4.1: file lên Supabase Storage bucket PRIVATE compliance-docs + row DB
+    // (bucket đã tạo bởi migration 20260914; bảng product_documents bởi 20260915)
+    const up = await SupabaseDatabaseService.uploadProductDocument(
+      selectedClientId || 'client-vina-01',
+      selectedProduct.sku,
+      doc,
+      file
+    )
+    if (up.ok) {
+      showToast('Đã upload chứng từ vào Supabase Storage (private) + ghi DB — trạng thái UNDER_REVIEW.', 'success')
+    } else {
+      showToast(
+        'Chưa upload được lên Storage (cần migration 20260914 + 20260915) — tạm lưu metadata cục bộ.',
+        'info'
+      )
+    }
+    // Always reflect in local state (localStorage fallback + instant UI)
+    addProductDocument(selectedProduct.id, doc)
+    setUploadingDoc(false)
     e.target.value = ''
   }
 
@@ -379,10 +401,11 @@ export function ProductManagement() {
                     </select>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      disabled={uploadingDoc}
+                      className="flex items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                     >
-                      <Upload size={13} />
-                      <span>Tải lên chứng từ mới</span>
+                      <Upload size={13} className={uploadingDoc ? 'animate-pulse' : ''} />
+                      <span>{uploadingDoc ? 'Đang upload...' : 'Tải lên chứng từ mới'}</span>
                     </button>
                     <input
                       ref={fileInputRef}

@@ -37,7 +37,7 @@ function backendSearchTermsBytes(text: string): number {
 }
 
 export function ListingManagement() {
-  const { filteredListings, applyListingDraft, rescoreListing, saveListingEdits, pushListingToAmazon, products, selectedClientId, showToast } = useAppState()
+  const { filteredListings, applyListingDraft, rescoreListing, saveListingEdits, pushListingToAmazon, pushAplusToAmazon, products, selectedClientId, showToast } = useAppState()
   const [selectedListing, setSelectedListing] = useState<ListingData>(filteredListings[0] || null)
   const [activeTab, setActiveTab] = useState<'SIDE_BY_SIDE' | 'SCORECARD' | 'APLUS_CONTENT' | 'EDITOR'>('SIDE_BY_SIDE')
 
@@ -120,6 +120,63 @@ export function ListingManagement() {
       editorImages[0]
     )
     setPushing(false)
+  }
+
+  // ============ SPRINT 4.1: A+ CONTENT EDITOR & PUSH ============
+  const [aplusModules, setAplusModules] = useState<{ type: string; headline: string; body: string; imageUrl: string }[]>([])
+  const [aplusLoadedForRef, setAplusLoadedForRef] = useState<string | null>(null)
+  const [pushingAplus, setPushingAplus] = useState(false)
+
+  // nạp module A+ của listing (hoặc khung mặc định nếu chưa có)
+  useEffect(() => {
+    if (!selectedListing || aplusLoadedForRef === selectedListing.id) return
+    setAplusLoadedForRef(selectedListing.id)
+    if (selectedListing.aplusModules && selectedListing.aplusModules.length > 0) {
+      setAplusModules(selectedListing.aplusModules.map((m) => ({ ...m, type: m.type || 'STANDARD_IMAGE_HIGHLIGHTS' })))
+    } else {
+      setAplusModules([
+        { type: 'STANDARD_IMAGE_HIGHLIGHTS', headline: 'Brand Story', body: '', imageUrl: '' },
+        { type: 'STANDARD_IMAGE_HIGHLIGHTS', headline: 'Why choose us', body: '', imageUrl: '' },
+      ])
+    }
+  }, [selectedListing])
+
+  const buildAplusHtml = (mods: { headline: string; body: string; imageUrl: string }[]) =>
+    `<div>` +
+    mods
+      .map(
+        (m) =>
+          `<section><h3>${m.headline}</h3>` +
+          (m.imageUrl ? `<img src="${m.imageUrl}" alt="${m.headline}" />` : '') +
+          `<p>${m.body}</p></section>`
+      )
+      .join('') +
+    `</div>`
+
+  const handleAplusSave = async () => {
+    if (!selectedListing) return
+    setSaving(true)
+    await saveListingEdits({
+      ...selectedListing,
+      aplusModules: aplusModules.map(({ headline, body, imageUrl }) => ({
+        type: 'STANDARD_IMAGE_HIGHLIGHTS',
+        headline,
+        body,
+        imageUrl,
+      })),
+      aplusContentHtml: buildAplusHtml(aplusModules),
+    })
+    setSaving(false)
+  }
+
+  const handleAplusSubmit = async () => {
+    if (!selectedListing) return
+    setPushingAplus(true)
+    await pushAplusToAmazon({
+      ...selectedListing,
+      aplusModules: aplusModules.map(({ headline, body, imageUrl }) => ({ type: 'STANDARD_IMAGE_HIGHLIGHTS', headline, body, imageUrl })),
+    })
+    setPushingAplus(false)
   }
 
   return (
@@ -416,40 +473,101 @@ export function ListingManagement() {
 
           {/* TAB 3: A+ CONTENT BRAND STORY */}
           {activeTab === 'APLUS_CONTENT' && (
-            <div className="rounded-xl border border-border bg-white p-6 shadow-xs space-y-6">
-              <div className="border-b border-slate-100 pb-3">
-                <h4 className="text-sm font-bold text-slate-900">A+ Enhanced Brand Content Draft (Amazon US)</h4>
-                <p className="text-xs text-slate-400">
-                  Cấu trúc câu chuyện thương hiệu thủ công Việt Nam (Mekong Delta Single Origin Terroir)
-                </p>
-              </div>
-
-              {/* A+ Modules Mockup */}
-              <div className="space-y-6 max-w-3xl mx-auto border border-slate-200 rounded-xl p-6 bg-slate-50/50">
-                {/* Module 1: Header Brand Hero */}
-                <div className="rounded-xl overflow-hidden bg-slate-900 text-white p-8 text-center space-y-2">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-blue-400">
-                    Direct Trade & Single Origin
-                  </span>
-                  <h3 className="text-xl font-black">FROM THE HEART OF MEKONG DELTA TO YOUR CUP</h3>
-                  <p className="text-xs text-slate-300 max-w-xl mx-auto">
-                    Cultivated along the nutrient-rich silt of Ben Tre rivers. Each cocoa pod is hand-selected by multi-generational farming families.
-                  </p>
+            <div className="space-y-4">
+              <div className="rounded-xl border border-border bg-white p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-900">A+ Content Editor — Xây &amp; Đẩy lên Amazon</h4>
+                    <p className="text-xs text-slate-400">
+                      Module chuẩn standardSingleImageHighlights (headline + body + ảnh). Lưu DB, hoặc nộp duyệt qua
+                      A+ Content Publishing API — Amazon rà soát ~24-48h trước khi publish.
+                    </p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button
+                      onClick={handleAplusSave}
+                      disabled={saving}
+                      className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                    >
+                      {saving ? 'Đang lưu...' : 'Lưu A+ (DB)'}
+                    </button>
+                    <button
+                      onClick={handleAplusSubmit}
+                      disabled={pushingAplus}
+                      className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {pushingAplus ? 'Đang nộp...' : 'Nộp duyệt Amazon'}
+                    </button>
+                  </div>
                 </div>
 
-                {/* Module 2: 3 Comparison Pillars */}
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div className="rounded-lg bg-white p-4 border border-slate-200 space-y-1">
-                    <div className="text-base font-black text-blue-600">100% Organic</div>
-                    <div className="text-[11px] text-slate-600">USDA & Non-GMO Verified</div>
-                  </div>
-                  <div className="rounded-lg bg-white p-4 border border-slate-200 space-y-1">
-                    <div className="text-base font-black text-blue-600">3 Pure Ingredients</div>
-                    <div className="text-[11px] text-slate-600">Zero Palm Oil, Dairy or Soy</div>
-                  </div>
-                  <div className="rounded-lg bg-white p-4 border border-slate-200 space-y-1">
-                    <div className="text-base font-black text-blue-600">Fair Wages</div>
-                    <div className="text-[11px] text-slate-600">Supporting 120+ Farmers</div>
+                <div className="mt-4 space-y-4">
+                  {aplusModules.map((mod, i) => (
+                    <div key={i} className="rounded-xl border border-slate-200 p-4 space-y-2 bg-slate-50/40">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-purple-700">MODULE {i + 1} — Image + Highlights</span>
+                        <button
+                          onClick={() => setAplusModules((prev) => prev.filter((_, j) => j !== i))}
+                          className="text-[11px] font-bold text-red-500 hover:underline"
+                        >
+                          Xóa module
+                        </button>
+                      </div>
+                      <input
+                        value={mod.headline}
+                        onChange={(e) => setAplusModules((prev) => prev.map((x, j) => (j === i ? { ...x, headline: e.target.value } : x)))}
+                        placeholder="Headline (≤90 ký tự — Amazon chặn vượt)"
+                        maxLength={90}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      />
+                      <textarea
+                        value={mod.body}
+                        onChange={(e) => setAplusModules((prev) => prev.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))}
+                        placeholder="Nội dung module (≤1000 ký tự/module)"
+                        rows={3}
+                        maxLength={1000}
+                        className="w-full rounded-lg border border-slate-200 p-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={mod.imageUrl}
+                          onChange={(e) => setAplusModules((prev) => prev.map((x, j) => (j === i ? { ...x, imageUrl: e.target.value } : x)))}
+                          placeholder="URL ảnh (dán từ ảnh đã upload ở tab Editor, public đọc được)"
+                          className="w-full rounded-lg border border-slate-200 p-2 text-[11px] font-mono text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+                        />
+                        {editorImages[i] && (
+                          <button
+                            onClick={() => setAplusModules((prev) => prev.map((x, j) => (j === i ? { ...x, imageUrl: editorImages[i] } : x)))}
+                            className="shrink-0 rounded bg-blue-50 px-2 py-1 text-[10px] font-bold text-blue-700 hover:bg-blue-100"
+                            title="Dùng ảnh thứ (i+1) đã upload"
+                          >
+                            Dùng ảnh {i + 1}
+                          </button>
+                        )}
+                      </div>
+                      {/* Preview */}
+                      <div className="rounded-lg bg-white border border-slate-100 p-4 text-center">
+                        <h3 className="text-base font-black text-slate-900">{mod.headline || '(headline trống)'}</h3>
+                        {mod.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={mod.imageUrl} alt={mod.headline} className="mx-auto mt-2 max-h-40 rounded-lg object-contain" />
+                        )}
+                        <p className="mt-2 text-xs text-slate-600 whitespace-pre-line">{mod.body || '(nội dung trống)'}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {aplusModules.length < 5 && (
+                    <button
+                      onClick={() => setAplusModules((prev) => [...prev, { type: 'STANDARD_IMAGE_HIGHLIGHTS', headline: '', body: '', imageUrl: '' }])}
+                      className="text-xs font-bold text-blue-600 hover:underline"
+                    >
+                      + Thêm module ({aplusModules.length}/5 — Amazon tối đa 7, khuyến nghị ≤5 cho EBC cơ bản)
+                    </button>
+                  )}
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-[11px] text-amber-900">
+                    <strong>Ranh giới minh bạch:</strong> {selectedListing?.asin ? `ASIN gán: ${selectedListing.asin}. ` : 'Listing CHƯA có ASIN — cần ASIN để gán A+. '}
+                    Luồng Amazon: tạo document → nộp duyệt → Amazon review 24-48h → publish (nút Nộp duyệt làm bước 1-3;
+                    PUBLISH sau khi APPROVED cần refKey — hiện qua API). Khi chưa có credentials: MÔ PHỎNG, không gọi Amazon.
                   </div>
                 </div>
               </div>
