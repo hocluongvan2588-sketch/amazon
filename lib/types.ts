@@ -681,3 +681,74 @@ export interface AppNotification {
     role: UserRole
   }
 }
+
+// ====================================================================
+// LOGISTICS, FREIGHT RATES, CBM & SHIPMENT INTAKE TYPES
+// ====================================================================
+
+export type FreightTransportMode = 'OCEAN_FCL_40HC' | 'OCEAN_FCL_20FT' | 'OCEAN_LCL' | 'AIR_EXPRESS' | 'AIR_CARGO'
+
+export interface FreightRateCard {
+  id: string
+  carrierPartnerName: string
+  transportMode: FreightTransportMode
+  originPort: string // 'Cát Lái (HCMC)', 'Hải Phòng (HPH)'
+  destinationPort: string // 'Los Angeles (LAX)', 'Long Beach (LGB)', 'Tacoma', 'New York (NYC)'
+  ratePerCbmUsd?: number
+  ratePerKgUsd?: number
+  ratePerContainerUsd?: number
+  estimatedTransitDays: number
+  customsClearanceDaysEst: number
+  validUntil: string
+  fuelSurchargePercent: number
+  documentationFeeUsd: number
+  drayageEstUsd: number
+}
+
+export interface InboundShipmentItem {
+  sku: string
+  asin: string
+  title: string
+  unitsPerCarton: number
+  cartonCount: number
+  totalUnits: number
+  fobUnitCostUsd: number
+  cartonDimensionsCm: { length: number; width: number; height: number }
+  cartonWeightKg: number
+}
+
+export interface LandedCostCalculationResult {
+  totalUnits: number
+  totalCartons: number
+  grossWeightKg: number
+  totalCbm: number
+  volumetricWeightKg: number
+  chargeableWeightKg: number
+  freightCostUsd: number
+  importTariffDutyUsd: number
+  customsAndDrayageUsd: number
+  fbaInboundPlacementFeeUsd: number
+  totalLandedCostUsd: number
+  fobCostPerUnit: number
+  freightCostPerUnit: number
+  dutyCostPerUnit: number
+  fbaInboundFeePerUnit: number
+  finalLandedCostPerUnit: number
+  landedCostMultiplier: number // e.g. 1.38x of FOB
+}
+
+export interface ForwarderWebhookPayload {
+  event: 'MILESTONE_UPDATED' | 'CUSTOMS_CLEARED' | 'VESSEL_DEPARTED' | 'VESSEL_ARRIVED' | 'OUT_FOR_DELIVERY' | 'DELIVERED_3PL'
+  shipmentId: string
+  trackingNumber: string
+  carrierName: string
+  containerNumber?: string
+  billOfLadingNumber?: string
+  vesselName?: string
+  voyageNumber?: string
+  currentLocation: string
+  etaTimestamp: string
+  eventTimestamp: string
+  statusNotesVi: string
+  temperatureControlledAlert?: boolean
+}
