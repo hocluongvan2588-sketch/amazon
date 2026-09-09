@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { ForwarderWebhookPayload } from '@/lib/types'
 import { SupabaseDatabaseService } from '@/lib/supabase-service'
@@ -13,16 +14,26 @@ import { SupabaseDatabaseService } from '@/lib/supabase-service'
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Validate Webhook Secret Header (Optional Bearer / X-Webhook-Secret)
+    // 1. Validate Webhook Secret Header (Bearer / X-Webhook-Secret)
+    //    PRODUCTION + đã cấu hình LOGISTICS_WEBHOOK_SECRET -> BẮT BUỘC khớp mới nhận
+    //    (bản cũ: không gửi header thì đi qua luôn — lỗ hổng khi lên production)
     const webhookSecret = req.headers.get('x-vexim-webhook-secret') || req.headers.get('authorization')
-    const expectedSecret = process.env.LOGISTICS_WEBHOOK_SECRET || 'vexim_logistics_live_2026'
+    const expectedSecret = process.env.LOGISTICS_WEBHOOK_SECRET
 
-    // Allow mock payloads in dev, check header if configured in prod
-    if (process.env.NODE_ENV === 'production' && webhookSecret && !webhookSecret.includes(expectedSecret)) {
-      return NextResponse.json(
-        { error: 'Unauthorized: Invalid Webhook Secret Signature' },
-        { status: 401 }
-      )
+    const mustAuth = process.env.NODE_ENV === 'production' && !!expectedSecret
+    if (mustAuth) {
+      const provided = webhookSecret || ''
+      const matches = (expectedValue: string) => {
+        const a = Buffer.from(provided)
+        const b = Buffer.from(expectedValue)
+        return a.length === b.length && crypto.timingSafeEqual(a, b)
+      }
+      if (!provided || (!matches(expectedSecret!) && !matches(`Bearer ${expectedSecret}`))) {
+        return NextResponse.json(
+          { error: 'Unauthorized: Invalid or missing X-Vexim-Webhook-Secret header' },
+          { status: 401 }
+        )
+      }
     }
 
     const payload: ForwarderWebhookPayload = await req.json()

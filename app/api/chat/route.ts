@@ -41,8 +41,35 @@ async function buildLiveDbContext(): Promise<string> {
   }
 }
 
+// Rate limit in-memory 30 câu hỏi/phút/IP (per-instance; production multi-instance nên
+// dùng Redis/Upstash). Chống lạm dụng chi phí AI khi mở public.
+const RATE_LIMIT = 30
+const WINDOW_MS = 60_000
+const rateBuckets = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const bucket = rateBuckets.get(ip)
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(ip, { count: 1, resetAt: now + WINDOW_MS })
+    if (rateBuckets.size > 5000) rateBuckets.clear()
+    return true
+  }
+  if (bucket.count >= RATE_LIMIT) return false
+  bucket.count += 1
+  return true
+}
+
 export async function POST(request: Request) {
   try {
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown'
+    if (!checkRateLimit(ip)) {
+      return Response.json({ error: 'Quá nhiều câu hỏi. Vui lòng thử lại sau 1 phút.' }, { status: 429 })
+    }
+
     const body = (await request.json()) as { messages?: UIMessage[] }
     const messages = Array.isArray(body.messages) ? body.messages.slice(-12) : []
 

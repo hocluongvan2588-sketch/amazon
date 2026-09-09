@@ -17,6 +17,10 @@ export interface SyncResult {
   syncedAt: string
   details: string
   warnings?: string[]
+  /** true = kết quả MÔ PHỎNG (không phải dữ liệu Amazon thật) */
+  simulated?: boolean
+  /** Mã lỗi nếu success=false (SP_API_ERROR, LWA_TOKEN_FAILED, ADS_API_NOT_IMPLEMENTED...) */
+  error?: string
 }
 
 export class AmazonSPAPIConnector {

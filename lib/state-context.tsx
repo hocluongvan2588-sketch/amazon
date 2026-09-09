@@ -76,6 +76,7 @@ import {
 import { spApiConnector } from './amazon-sp-api'
 import { SupabaseDatabaseService } from './supabase-service'
 import { DEFAULT_RATE_CARDS } from './logistics-engine'
+import type { SyncResult } from './amazon-sp-api'
 
 export type ActiveNavTab =
   | 'ai-operations'
@@ -872,28 +873,74 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
 
   // 8. TRIGGER SYNC JOB
   const triggerSyncJob = async (jobId: string) => {
+    const job = syncJobs.find((j) => j.id === jobId)
+    const moduleName = job?.module || 'ORDERS'
     setIsSyncing(true)
     setSyncJobs((prev) =>
       prev.map((j) => (j.id === jobId ? { ...j, status: 'SYNC_RUNNING' } : j))
     )
 
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Gọi Amazon Sync Gateway (server). Đủ credentials -> SP-API THẬT,
+    // thiếu -> simulated:true (kết quả mô phỏng được báo rõ cho người dùng).
+    let handled = false
+    try {
+      const res = await fetch('/api/amazon/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module: moduleName }),
+      })
+      const data = await res.json()
+      const result: SyncResult | undefined = data?.result
 
-    setSyncJobs((prev) =>
-      prev.map((j) =>
-        j.id === jobId
-          ? {
-              ...j,
-              status: 'SYNC_SUCCESS',
-              lastRunTime: 'Vừa xong',
-              itemsProcessed: j.itemsProcessed + 4,
-            }
-          : j
+      if (res.ok && result) {
+        handled = true
+        setSyncJobs((prev) =>
+          prev.map((j) =>
+            j.id === jobId
+              ? {
+                  ...j,
+                  status: result.success ? 'SYNC_SUCCESS' : 'SYNC_FAILED',
+                  lastRunTime: 'Vừa xong',
+                  itemsProcessed: j.itemsProcessed + (result.itemsCount || 0),
+                  errorCount: result.success ? 0 : 1,
+                }
+              : j
+          )
+        )
+        setLastSyncNotice(result.details)
+        if (result.simulated) {
+          showToast(
+            `⚠️ ${job?.name || moduleName}: CHẾ ĐỘ MÔ PHỎNG — thiếu Amazon credentials (xem /api/amazon/sync).`,
+            'warning'
+          )
+        } else if (result.success) {
+          showToast(`✅ Đồng bộ ${moduleName} từ Amazon SP-API THẬT hoàn tất.`, 'success')
+        } else {
+          showToast(`❌ Đồng bộ ${moduleName} thất bại: ${result.error || 'unknown'}`, 'error')
+        }
+      }
+    } catch {
+      // Network/API chưa sẵn sàng -> mô phỏng cục bộ, báo rõ là mô phỏng
+    }
+
+    if (!handled) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setSyncJobs((prev) =>
+        prev.map((j) =>
+          j.id === jobId
+            ? {
+                ...j,
+                status: 'SYNC_SUCCESS',
+                lastRunTime: 'Vừa xong',
+                itemsProcessed: j.itemsProcessed + 4,
+              }
+            : j
+        )
       )
-    )
+      setLastSyncNotice('CHẾ ĐỘ MÔ PHỎNG CỤC BỘ — server sync không phản hồi, kết quả không phải dữ liệu Amazon thật.')
+      showToast('⚠️ Không gọi được Amazon Sync Gateway — kết quả chỉ là mô phỏng cục bộ.', 'warning')
+    }
     setIsSyncing(false)
-    setLastSyncNotice('Đồng bộ Amazon SP-API thành công (0 lỗi).')
-    showToast('Đồng bộ Amazon SP-API hoàn tất thành công.', 'success')
   }
 
   // 9. APPLY LISTING DRAFT
