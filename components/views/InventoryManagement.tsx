@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 export function InventoryManagement() {
-  const { filteredInventory, openModal, createTask, setActiveTab } = useAppState()
+  const { filteredInventory, openModal, createTask, setActiveTab, currentRole } = useAppState()
   const [filterRisk, setFilterRisk] = useState<InventoryRisk | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -106,15 +106,27 @@ export function InventoryManagement() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setActiveTab('ai-operations')}
-            className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all"
-          >
-            <Sparkles size={14} />
-            <span>Xem Đề xuất Nhập hàng tại AI Center</span>
-          </button>
-        </div>
+        {currentRole === 'CLIENT_SUPPLIER' ? (
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setActiveTab('supplier-portal')}
+              className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-emerald-700 transition-all cursor-pointer"
+            >
+              <Boxes size={14} />
+              <span>Về Cổng Doanh Nghiệp P&L</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setActiveTab('ai-operations')}
+              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 transition-all"
+            >
+              <Sparkles size={14} />
+              <span>Xem Đề xuất Nhập hàng tại AI Center</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Inventory Metric Highlights */}
@@ -281,9 +293,13 @@ export function InventoryManagement() {
                       {item.recommendedReorderQty > 0 ? (
                         <button
                           onClick={() => handleCreateReorderTask(item)}
-                          className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-blue-700 transition-colors"
+                          className={`rounded-lg px-3 py-1.5 text-xs font-semibold text-white shadow-2xs transition-colors ${
+                            currentRole === 'CLIENT_SUPPLIER'
+                              ? 'bg-emerald-600 hover:bg-emerald-700'
+                              : 'bg-blue-600 hover:bg-blue-700'
+                          }`}
                         >
-                          Tạo Task PO
+                          {currentRole === 'CLIENT_SUPPLIER' ? 'Lên Lịch Sản Xuất' : 'Tạo Task PO'}
                         </button>
                       ) : (
                         <span className="text-slate-400 text-xs">Ổn định</span>

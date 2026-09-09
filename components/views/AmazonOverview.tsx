@@ -69,6 +69,7 @@ export function AmazonOverview() {
     filteredRecommendations,
     setActiveTab,
     accountHealth,
+    currentRole,
   } = useAppState()
 
   const pendingUrgentRecs = filteredRecommendations.filter((r) => r.priority === 'CRITICAL' || r.priority === 'HIGH')
@@ -131,13 +132,23 @@ export function AmazonOverview() {
             </div>
           </div>
 
-          <button
-            onClick={() => setActiveTab('ai-operations')}
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-colors shrink-0"
-          >
-            <Sparkles size={14} />
-            <span>Xem & Phê duyệt tại AI Center</span>
-          </button>
+          {currentRole !== 'CLIENT_SUPPLIER' ? (
+            <button
+              onClick={() => setActiveTab('ai-operations')}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-colors shrink-0 cursor-pointer"
+            >
+              <Sparkles size={14} />
+              <span>Xem & Phê duyệt tại AI Center</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setActiveTab('supplier-portal')}
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors shrink-0 cursor-pointer"
+            >
+              <ShieldCheck size={14} />
+              <span>Xem Cổng Tài Chính P&L</span>
+            </button>
+          )}
         </div>
       )}
 

@@ -27,7 +27,7 @@ import {
 } from 'lucide-react'
 
 export function PpcAdvertising() {
-  const { filteredCampaigns, filteredKeywords, setActiveTab, openModal } = useAppState()
+  const { filteredCampaigns, filteredKeywords, setActiveTab, openModal, currentRole } = useAppState()
   const [activeTab, setActiveTabLocal] = useState<'CAMPAIGNS' | 'KEYWORDS' | 'SEARCH_TERMS'>('CAMPAIGNS')
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false)
   const { toggleCampaignStatus } = useAppState()
