@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { SupplierReadyConfirmationModal } from "@/components/modals/SupplierReadyConfirmationModal"
 import { useAppState } from '@/lib/state-context'
 import { InventoryItem, InventoryRisk } from '@/lib/types'
 import {
@@ -27,9 +28,19 @@ import {
 } from 'lucide-react'
 
 export function InventoryManagement() {
-  const { filteredInventory, openModal, createTask, setActiveTab, currentRole, showToast } = useAppState()
+  const {
+    filteredInventory,
+    openModal,
+    createTask,
+    setActiveTab,
+    currentRole,
+    showToast,
+    submitSupplierReadyNotification,
+  } = useAppState()
   const [filterRisk, setFilterRisk] = useState<InventoryRisk | 'ALL'>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedItemForReady, setSelectedItemForReady] = useState<InventoryItem | null>(null)
+  const [isReadyModalOpen, setIsReadyModalOpen] = useState(false)
 
   const displayedItems = filteredInventory.filter((item) => {
     if (filterRisk !== 'ALL' && item.riskLevel !== filterRisk) return false
@@ -74,14 +85,10 @@ export function InventoryManagement() {
     }
   }
 
-  const handleCreateReorderTask = (item: InventoryItem) => {
+  const handleActionClick = (item: InventoryItem) => {
     if (currentRole === 'CLIENT_SUPPLIER') {
-      if (showToast) {
-        showToast(
-          `Đã gửi thông báo xác nhận xưởng sẵn sàng đóng gói ${item.recommendedReorderQty} units SKU ${item.sku} tới Trưởng kho Ánh Nguyễn!`,
-          'success'
-        )
-      }
+      setSelectedItemForReady(item)
+      setIsReadyModalOpen(true)
     } else {
       createTask({
         clientId: item.clientId,
@@ -93,7 +100,14 @@ export function InventoryManagement() {
         source: 'AI_INVENTORY_AGENT',
         linkedEntity: { type: 'INVENTORY', id: item.id, name: item.sku },
       })
+      if (showToast) {
+        showToast(`Đã tạo Task PO cho Logistics Lead Ánh Nguyễn!`, 'success')
+      }
     }
+  }
+
+  const handleConfirmSupplierReady = (data: any) => {
+    submitSupplierReadyNotification(data)
   }
 
   return (
@@ -299,20 +313,34 @@ export function InventoryManagement() {
                     </td>
 
                     <td className="py-3 px-4 text-right">
-                      {item.recommendedReorderQty > 0 ? (
+                      {item.supplierReadyStatus === 'FACTORY_READY' ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold text-emerald-800 border border-emerald-300">
+                            <CheckCircle2 size={12} className="text-emerald-600" />
+                            <span>Đã Báo Sẵn Sàng (+{item.supplierReadyQty || item.recommendedReorderQty} sp)</span>
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            Ngày lấy hàng: {item.supplierReadyDate || '12/09'}
+                          </span>
+                        </div>
+                      ) : item.recommendedReorderQty > 0 ? (
                         <button
-                          onClick={() => handleCreateReorderTask(item)}
-                          className={`rounded-lg px-3 py-1.5 text-xs font-bold text-white shadow-2xs transition-all cursor-pointer ${
+                          onClick={() => handleActionClick(item)}
+                          className={`rounded-xl px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-all cursor-pointer ${
                             currentRole === 'CLIENT_SUPPLIER'
-                              ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98]'
+                              ? 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.98]'
                               : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.98]'
                           }`}
-                          title={currentRole === 'CLIENT_SUPPLIER' ? 'Báo cho đội ngũ Vexim biết xưởng đã sẵn sàng đóng gói lô hàng này' : 'Tạo Task giao việc cho Logistics Lead'}
+                          title={
+                            currentRole === 'CLIENT_SUPPLIER'
+                              ? 'Mở phiếu xác nhận lô hàng đã đóng gói xong để Vexim điều xe đến lấy'
+                              : 'Tạo Task PO giao việc nội bộ cho Logistics Lead'
+                          }
                         >
                           {currentRole === 'CLIENT_SUPPLIER' ? '📦 Báo Xưởng Đã Sẵn Sàng' : 'Tạo Task PO'}
                         </button>
                       ) : (
-                        <span className="text-slate-400 text-xs">Ổn định</span>
+                        <span className="text-slate-400 text-xs font-medium">Tồn kho ổn định</span>
                       )}
                     </td>
                   </tr>
@@ -322,6 +350,13 @@ export function InventoryManagement() {
           </table>
         </div>
       </div>
+      {/* Supplier Ready Confirmation Modal */}
+      <SupplierReadyConfirmationModal
+        isOpen={isReadyModalOpen}
+        onClose={() => setIsReadyModalOpen(false)}
+        item={selectedItemForReady}
+        onConfirm={handleConfirmSupplierReady}
+      />
     </div>
   )
 }
